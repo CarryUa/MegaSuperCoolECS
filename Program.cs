@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using ECS;
-using Events;
+using ECS.Events;
+using MegaSuperCoolECS.ECS;
 using MyOpenTKWindow;
 
 

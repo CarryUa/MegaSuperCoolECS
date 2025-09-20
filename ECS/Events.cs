@@ -1,18 +1,12 @@
 using System.Diagnostics;
-using System.Reflection;
-using ECS;
+using MegaSuperCoolECS.ECS;
 
-namespace Events;
+namespace ECS.Events;
 
 public class Event()
 {
     public bool Handled { get; set; }
     public List<Action<Component, Event>> Actions { get; set; } = []; // Empty action
-}
-
-public class NewEvent : Event
-{
-
 }
 
 public sealed class EventManager : EntitySystem
