@@ -1,6 +1,6 @@
 # C# Compiler Output Files
-bin/
-obj/
+/bin
+/obj
 *.dll
 *.exe
 *.pdb
