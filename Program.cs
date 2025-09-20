@@ -21,9 +21,9 @@ public sealed class TestSystem() : EntitySystem
     {
         base.Update(deltaT);
         CurrentTime += deltaT;
-        if(CurrentTime >= NextUpdate)
+        if (CurrentTime >= NextUpdate)
         {
-            NextUpdate+=0.5;
+            NextUpdate += 0.5;
 
         }
     }
@@ -50,9 +50,9 @@ public sealed class TimeCounterSystem() : EntitySystem
     {
         base.Update(deltaT);
         CurrentTime += deltaT;
-        if(CurrentTime >= NextUpdate)
+        if (CurrentTime >= NextUpdate)
         {
-            NextUpdate+=0.5;
+            NextUpdate += 0.5;
 
             var ev = new Event();
             RaiseEvent(ev);
@@ -90,18 +90,15 @@ class Program
         var sysMan = new EntSysManager();
         sysMan.InitAllSystems(true);
 
-        Logger.LogError("5.1");
+        Logger.LogError("5.1", true, ConsoleColor.DarkRed);
 
         // Start timer
         Stopwatch stopwatch = Stopwatch.StartNew();
         long lastTicks = stopwatch.ElapsedTicks;
         double tickFrequency = Stopwatch.Frequency;
 
-        Main();
-
-        using (MyWindow window = new(1300, 700))
+        using (MyWindow window = new(1300, 700, sysMan.UpdateAll))
         {
-            window.UpdateSystems += sysMan.UpdateAll;
             window.Run();
         }
     }
@@ -122,7 +119,7 @@ class Program
 //     {
 //         return Zuzytie * StawkaKW;
 //     }
-    
+
 //     public static void ZmienStawke(float nowa){
 //         StawkaKW = nowa;
 //     }

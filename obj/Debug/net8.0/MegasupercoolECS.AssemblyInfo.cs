@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MegasupercoolECS")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f40616395d2bb91e7cef7d3155ca6a450caec646")]
 [assembly: System.Reflection.AssemblyProductAttribute("MegasupercoolECS")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MegasupercoolECS")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

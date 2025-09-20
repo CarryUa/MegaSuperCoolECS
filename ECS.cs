@@ -70,27 +70,27 @@ public class EntitySystem
             {
                 if (comp is TComp tComp && ev is TEv tEv)
                 {
-                     // Additional type check
-                     if (typeof(TComp) != tComp.GetType()) return;
-        
+                    // Additional type check
+                    if (typeof(TComp) != tComp.GetType()) return;
+
                     action(tComp, tEv);
                 }
                 else
-                throw new Exception("Wrong Event Type Exception");
+                    throw new Exception("Wrong Event Type Exception");
             });
 
 
         // Check if same component is subscribed already
-        if(_evMan.ActiveSubsctiptions.Where(ev => ev.Key.GetType() == typeof(TComp)).Count() > 0)
+        if (_evMan.ActiveSubsctiptions.Where(ev => ev.Key.GetType() == typeof(TComp)).Count() > 0)
         {
-           foreach(var sub in _evMan.ActiveSubsctiptions)
-           {
-            if(sub.Key.GetType() == typeof(TComp))
+            foreach (var sub in _evMan.ActiveSubsctiptions)
             {
-            sub.Value.Actions.Add(act);
-        return;
+                if (sub.Key.GetType() == typeof(TComp))
+                {
+                    sub.Value.Actions.Add(act);
+                    return;
+                }
             }
-           }
         }
 
         _event.Actions.Add(act);
@@ -103,7 +103,8 @@ public class EntitySystem
 
         Logger.LogInfo(_event.Actions);
     }
-    public void RaiseEvent(Event ev){
+    public void RaiseEvent(Event ev)
+    {
         _evMan.RaiseEvent(ev);
     }
 }
@@ -180,10 +181,10 @@ public class EntSysManager
                         // Create new if doesn't exist
                         if (instance is null)
                         {
-                        instance = (EntitySystem?) Activator.CreateInstance(_classT);
-                        if(v)
-                            Console.WriteLine($"Creating instance of {_classT} : {instance!.GetHashCode()}");
-                        InitializedSystems.Add(instance!);
+                            instance = (EntitySystem?)Activator.CreateInstance(_classT);
+                            if (v)
+                                Console.WriteLine($"Creating instance of {_classT} : {instance!.GetHashCode()}");
+                            InitializedSystems.Add(instance!);
                         }
                         field.SetValue(system, instance);
                         if (v)
@@ -250,7 +251,7 @@ public sealed class SystemDependency : Attribute
 
 [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
 public sealed class InjectableDependency : Attribute
-{      
+{
 }
 
 

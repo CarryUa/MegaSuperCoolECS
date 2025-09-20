@@ -3,6 +3,7 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 
 namespace MyOpenTKWindow;
+
 class MyWindow : GameWindow
 {
     public static int SCREENWIDTH;
@@ -10,11 +11,18 @@ class MyWindow : GameWindow
 
     public event Action<double> UpdateSystems;
 
-    public MyWindow(int w, int h) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
+    /// <summary>
+    ///  
+    /// </summary>
+    /// <param name="w">Width of the screen</param>
+    /// <param name="h">Height of the screen</param>
+    /// <param name="updateAction">Action to be called to update systems</param>
+    public MyWindow(int w, int h, Action<double> updateAction) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
     {
-        SCREENHEIGHT= h;
+        SCREENHEIGHT = h;
         SCREENWIDTH = w;
-        this.CenterWindow(new(w,h));
+        UpdateSystems += updateAction;
+        this.CenterWindow(new(w, h));
     }
     protected override void OnLoad()
     {

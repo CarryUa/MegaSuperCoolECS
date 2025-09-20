@@ -1,0 +1,6 @@
+# C# Compiler Output Files
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
