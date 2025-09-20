@@ -1,0 +1,14 @@
+C:\Users\ATI2024\Desktop\MegasupercoolECS\bin\Debug\net9.0\MegasupercoolECS.exe
+C:\Users\ATI2024\Desktop\MegasupercoolECS\bin\Debug\net9.0\MegasupercoolECS.deps.json
+C:\Users\ATI2024\Desktop\MegasupercoolECS\bin\Debug\net9.0\MegasupercoolECS.runtimeconfig.json
+C:\Users\ATI2024\Desktop\MegasupercoolECS\bin\Debug\net9.0\MegasupercoolECS.dll
+C:\Users\ATI2024\Desktop\MegasupercoolECS\bin\Debug\net9.0\MegasupercoolECS.pdb
+C:\Users\ATI2024\Desktop\MegasupercoolECS\obj\Debug\net9.0\MegasupercoolECS.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ATI2024\Desktop\MegasupercoolECS\obj\Debug\net9.0\MegasupercoolECS.AssemblyInfoInputs.cache
+C:\Users\ATI2024\Desktop\MegasupercoolECS\obj\Debug\net9.0\MegasupercoolECS.AssemblyInfo.cs
+C:\Users\ATI2024\Desktop\MegasupercoolECS\obj\Debug\net9.0\MegasupercoolECS.csproj.CoreCompileInputs.cache
+C:\Users\ATI2024\Desktop\MegasupercoolECS\obj\Debug\net9.0\MegasupercoolECS.dll
+C:\Users\ATI2024\Desktop\MegasupercoolECS\obj\Debug\net9.0\refint\MegasupercoolECS.dll
+C:\Users\ATI2024\Desktop\MegasupercoolECS\obj\Debug\net9.0\MegasupercoolECS.pdb
+C:\Users\ATI2024\Desktop\MegasupercoolECS\obj\Debug\net9.0\MegasupercoolECS.genruntimeconfig.cache
+C:\Users\ATI2024\Desktop\MegasupercoolECS\obj\Debug\net9.0\ref\MegasupercoolECS.dll
