@@ -1,7 +1,9 @@
 using System.Reflection;
+using ECS.Components;
 using ECS.Events;
+using ECS.Logs;
 
-namespace MegaSuperCoolECS.ECS;
+namespace ECS.Systems;
 
 [InjectableDependency]
 public class EntitySystem
@@ -19,7 +21,6 @@ public class EntitySystem
     }
     public virtual void Init()
     {
-        _compMan.CreateComponent<HelloWorldComponent>();
     }
 
     public void SubscribeEvent<TComp, TEv>(Action<TComp, TEv> action)

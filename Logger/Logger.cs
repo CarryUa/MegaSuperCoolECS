@@ -1,7 +1,8 @@
+namespace ECS.Logs;
 
 public static class Logger
 {
-    public static void LogInfo(object? msg, bool fancy = false, ConsoleColor color = new ConsoleColor())
+    public static void LogInfo(object? msg, bool fancy = false, ConsoleColor color = ConsoleColor.DarkBlue)
     {
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.Write("[INFO] ");
@@ -11,7 +12,7 @@ public static class Logger
         else
             Console.Write(msg + "\n");
     }
-    public static void LogError(object? msg, bool fancy = false, ConsoleColor color = new ConsoleColor())
+    public static void LogError(object? msg, bool fancy = false, ConsoleColor color = ConsoleColor.DarkBlue)
     {
         Console.ForegroundColor = ConsoleColor.Red;
         Console.Write("[ERR] ");
@@ -26,14 +27,13 @@ public static class Logger
     {
         foreach (var str in msg.Split(" "))
         {
-            try
+            if (str.Any(char.IsDigit))
             {
-                Convert.ToDouble($"{str} ");
                 Console.ForegroundColor = color;
                 Console.Write($"{str} ");
                 Console.ResetColor();
             }
-            catch
+            else
             {
                 Console.Write($"{str} ");
             }

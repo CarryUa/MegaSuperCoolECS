@@ -1,4 +1,7 @@
-namespace MegaSuperCoolECS.ECS;
+using ECS.Systems;
+using ECS.Logs;
+
+namespace ECS.Components;
 
 public class Component(int newId)
 {

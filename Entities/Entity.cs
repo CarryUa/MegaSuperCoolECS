@@ -1,4 +1,6 @@
-namespace MegaSuperCoolECS.ECS;
+using ECS.Components;
+
+namespace ECS.Entities;
 
 public class Entity
 {

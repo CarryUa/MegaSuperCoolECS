@@ -9,7 +9,7 @@ class MyWindow : GameWindow
     public static int SCREENWIDTH;
     public static int SCREENHEIGHT;
 
-    public event Action<double> UpdateSystems;
+    public Action<double> UpdateSystems;
 
     /// <summary>
     ///  
@@ -34,11 +34,18 @@ class MyWindow : GameWindow
         base.OnUnload();
     }
 
+    protected override void OnUpdateFrame(FrameEventArgs args)
+    {
+        base.OnUpdateFrame(args);
+        UpdateSystems.Invoke(args.Time);
+    }
+
     protected override void OnRenderFrame(FrameEventArgs args)
     {
         base.OnRenderFrame(args);
-        UpdateSystems.Invoke(this.TimeSinceLastUpdate());
-
+        GL.Clear(ClearBufferMask.ColorBufferBit);
+        GL.ClearColor(0.2f, 0.2f, 0.2f, 1);
+        this.SwapBuffers();
     }
 
 }

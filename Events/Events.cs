@@ -1,5 +1,6 @@
 using System.Diagnostics;
-using MegaSuperCoolECS.ECS;
+using ECS.Components;
+using ECS.Systems;
 
 namespace ECS.Events;
 
