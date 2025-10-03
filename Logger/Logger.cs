@@ -1,7 +1,25 @@
 namespace ECS.Logs;
 
+internal enum LogType : byte
+{
+    Info,
+    Debug,
+    Error,
+    // Fatal is printed without the queue, because it kills the program.
+}
+
+internal struct LogMessage(object? msg, bool fancy, ConsoleColor color, LogType type)
+{
+    public object? Message = msg;
+    public bool Fancy = fancy;
+    public ConsoleColor FancyColor = color;
+    public LogType LogType = type;
+}
+
 public static class Logger
 {
+    private static readonly Queue<LogMessage> _logQueue = new();
+
     /// <summary>
     /// Logs a debug message to the console.
     /// </summary>
@@ -10,13 +28,7 @@ public static class Logger
     /// <param name="color">The color to print numeric values and trailing strings. Defaults to DarkBlue.</param>
     public static void LogInfo(object? msg, bool fancy = false, ConsoleColor color = ConsoleColor.DarkBlue)
     {
-        Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.Write("[INFO] ");
-        Console.ResetColor();
-        if (fancy)
-            PrintFancy($"{msg}", color);
-        else
-            Console.Write(msg + "\n");
+        _logQueue.Enqueue(new(msg, fancy, color, LogType.Info));
     }
 
     /// <summary>
@@ -27,13 +39,7 @@ public static class Logger
     /// <param name="color">The color to print numeric values and trailing strings. Defaults to DarkBlue.</param>
     public static void LogDebug(object? msg, bool fancy = false, ConsoleColor color = ConsoleColor.DarkBlue)
     {
-        Console.ForegroundColor = ConsoleColor.DarkBlue;
-        Console.Write("[DEBUG] ");
-        Console.ResetColor();
-        if (fancy)
-            PrintFancy($"{msg}", color);
-        else
-            Console.Write(msg + "\n");
+        _logQueue.Enqueue(new(msg, fancy, color, LogType.Debug));
     }
 
     /// <summary>
@@ -44,13 +50,7 @@ public static class Logger
     /// <param name="color">The color to print numeric values and trailing strings. Defaults to DarkBlue.</param>
     public static void LogError(object? msg, bool fancy = false, ConsoleColor color = ConsoleColor.DarkBlue)
     {
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.Write("[ERR] ");
-        Console.ResetColor();
-        if (fancy)
-            PrintFancy($"{msg}", color);
-        else
-            Console.Write(msg + "\n");
+        _logQueue.Enqueue(new(msg, fancy, color, LogType.Error));
     }
 
     /// <summary>
@@ -71,6 +71,27 @@ public static class Logger
             PrintFancy($"{msg}", color);
         else
             Console.Write(msg + "\n");
+        throw new Exception(msg?.ToString());
+    }
+
+    /// <summary>
+    /// Logs a Fatal error message to the console.
+    /// </summary>
+    /// <remarks>
+    /// This will terminate the program after logging the message!
+    /// </remarks>
+    /// <param name="msg">The exception to be printed</param>
+    /// <param name="fancy">If true, any numeric values and trailing strings will be printed in the specified color</param>
+    /// <param name="color">The color to print numeric values and trailing strings. Defaults to DarkBlue.</param>
+    public static void LogFatal(Exception ex, bool fancy = false, ConsoleColor color = ConsoleColor.DarkBlue)
+    {
+        Console.ForegroundColor = ConsoleColor.DarkMagenta;
+        Console.Write("[FATAL] ");
+        Console.ResetColor();
+        if (fancy)
+            PrintFancy($"{ex.Message}", color);
+        else
+            Console.Write(ex.Message + "\n");
     }
 
     private static void PrintFancy(string msg, ConsoleColor color)
@@ -90,5 +111,51 @@ public static class Logger
 
         }
         Console.Write("\n");
+    }
+
+    public static void PrintQueue()
+    {
+
+        // print all the messages in queue
+        foreach (var log in _logQueue.ToList())
+        {
+            // Print different color depending on type.
+            switch (log.LogType)
+            {
+                case LogType.Info:
+                    {
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        Console.Write("[INFO] ");
+                        Console.ResetColor();
+                        if (log.Fancy)
+                            PrintFancy($"{log.Message}", log.FancyColor);
+                        else
+                            Console.Write(log.Message + "\n");
+                        break;
+                    }
+                case LogType.Debug:
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkBlue;
+                        Console.Write("[DEBUG] ");
+                        Console.ResetColor();
+                        if (log.Fancy)
+                            PrintFancy($"{log.Message}", log.FancyColor);
+                        else
+                            Console.Write(log.Message + "\n");
+                        break;
+                    }
+                case LogType.Error:
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.Write("[ERR] ");
+                        Console.ResetColor();
+                        if (log.Fancy)
+                            PrintFancy($"{log.Message}", log.FancyColor);
+                        else
+                            Console.Write(log.Message + "\n");
+                        break;
+                    }
+            }
+        }
     }
 }

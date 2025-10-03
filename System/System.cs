@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Reflection;
+using System.Threading.Tasks;
 using ECS.Components;
 using ECS.Events;
 using ECS.Logs;
@@ -85,65 +87,89 @@ public class EntSysManager
         }
     }
 
-    public void InitAllSystems(bool verbouse = false)
+    public async Task InitAllSystems(bool verbouse = false)
     {
+        Stopwatch stopwatch = Stopwatch.StartNew();
         var EntSysType = typeof(EntitySystem);
 
         // Get all children of EntitySystem
         var entSyss = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.IsClass
                                                                             && EntSysType.IsAssignableFrom(t));
 
+        // Create Tasks
+        var tasks = new List<Task>();
+
 
         foreach (var sysT in entSyss)
         {
-            var sys = (EntitySystem?)Activator.CreateInstance(sysT);
-            InitializedSystems.Add(sys!);
-            if (verbouse)
-                Logger.LogInfo($"Initializing system {sys!.GetType()} : {sys!.GetHashCode()}", true, ConsoleColor.DarkBlue);
-
+            tasks.Add(Task.Run(() => InitSystem(sysT, verbouse)));
         }
 
-        foreach (var sys in InitializedSystems)
+        await Task.WhenAll(tasks);
+
+        foreach (var sys in InitializedSystems.ToList())
         {
-            InjectDependencies(sys, verbouse);
+            tasks.Add(InjectDependencies(sys, verbouse));
+        }
+        await Task.WhenAll(tasks);
+        foreach (var sys in InitializedSystems.ToList())
+        {
             sys.Init();
         }
-        // foreach (var sys in InitializedSystems)
-        // {
-        //     sys.Init();
-        // }
+
+        stopwatch.Stop();
+        Logger.LogInfo($"Initialized {InitializedSystems.Count} systems in {stopwatch.ElapsedMilliseconds}ms", true, ConsoleColor.Green);
     }
 
-    public void InjectDependencies<T>(T system, bool v = false)
+    public void InitSystem(Type system, bool verbouse = false)
     {
+        var sys = (EntitySystem?)Activator.CreateInstance(system);
+        InitializedSystems.Add(sys!);
+        if (verbouse)
+            Logger.LogInfo($"Initializing system {sys!.GetType()} : {sys!.GetHashCode()}", true, ConsoleColor.DarkBlue);
+    }
+
+    public async Task InjectDependencies(EntitySystem system, bool v = false)
+    {
+        var tasks = new List<Task>();
+
         var allInjectableDependency = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.GetCustomAttribute<InjectableDependency>() != null && typeof(EntitySystem).IsAssignableFrom(t));
 
         var fields = system!.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
 
         foreach (var field in fields)
         {
-            if (field.GetCustomAttribute<SystemDependency>() is not null)
-            {
-                foreach (var _classT in allInjectableDependency)
-                {
-                    if (_classT == field.FieldType)
-                    {
-                        // Search for existing instance
-                        var instance = InitializedSystems.Find(sys => sys.GetType() == _classT);
+            if (system is null) continue;
+            tasks.Add(Task.Run(() => InjectDependency(field, system, allInjectableDependency, v)));
+        }
+        await Task.WhenAll(tasks);
 
-                        // Create new if doesn't exist
-                        if (instance is null)
-                        {
-                            instance = (EntitySystem?)Activator.CreateInstance(_classT);
-                            if (v)
-                                Console.WriteLine($"Creating instance of {_classT} : {instance!.GetHashCode()}");
-                            InitializedSystems.Add(instance!);
-                        }
-                        field.SetValue(system, instance);
+        return;
+    }
+
+    public void InjectDependency(FieldInfo field, EntitySystem system, IEnumerable<Type> allInjectableDependency, bool v = false)
+    {
+        if (field.GetCustomAttribute<SystemDependency>() is not null)
+        {
+            foreach (var _classT in allInjectableDependency)
+            {
+                if (_classT == field.FieldType)
+                {
+                    // Search for existing instance
+                    var instance = InitializedSystems.Find(sys => sys is not null && sys.GetType() == _classT);
+
+                    // Create new if doesn't exist
+                    if (instance is null)
+                    {
+                        instance = (EntitySystem?)Activator.CreateInstance(_classT);
                         if (v)
-                            Logger.LogInfo($"Injecting dependency {instance!.GetType()} : {instance!.GetHashCode()} into {system}.{field.Name}", true, ConsoleColor.DarkBlue);
-                        break;
+                            Console.WriteLine($"Creating instance of {_classT} : {instance!.GetHashCode()}");
+                        InitializedSystems.Add(instance!);
                     }
+                    field.SetValue(system, instance);
+                    if (v)
+                        Logger.LogInfo($"Injecting dependency {instance!.GetType()} : {instance!.GetHashCode()} into {system}.{field.Name}", true, ConsoleColor.DarkBlue);
+                    break;
                 }
             }
         }

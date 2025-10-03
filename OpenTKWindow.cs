@@ -36,7 +36,7 @@ class MyWindow : GameWindow
         }
         catch (Exception ex)
         {
-            Logger.LogFatal($"Failed to load shaders: {ex.Message}");
+            Logger.LogFatal($"Failed to load shaders: {ex.Message} {ex.InnerException?.Message}");
             this.Close();
         }
         GL.ClearColor(0.2f, 0.2f, 0.2f, 1);

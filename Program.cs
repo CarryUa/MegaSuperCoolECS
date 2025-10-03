@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Threading.Tasks;
 using ECS.Logs;
 using ECS.Systems;
 using MyOpenTKWindow;
@@ -11,22 +12,19 @@ class Program
 
             // Instantiate EntSys
             var sysMan = new EntSysManager();
-            sysMan.InitAllSystems(true);
+            sysMan.InitAllSystems().GetAwaiter().GetResult();
 
-            // Start timer
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            long lastTicks = stopwatch.ElapsedTicks;
-            double tickFrequency = Stopwatch.Frequency;
-
+            Logger.PrintQueue();
 
             using (MyWindow window = new(1300, 700, sysMan.UpdateAll))
             {
                 window.Run();
             }
         }
-        catch
+        catch (Exception ex)
         {
-            while (true) { }
+            Logger.LogFatal(ex, true, ConsoleColor.DarkRed);
+            throw;
         }
     }
 }
