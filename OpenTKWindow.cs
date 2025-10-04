@@ -68,6 +68,7 @@ class MyWindow : GameWindow
     {
         base.OnUpdateFrame(args);
         UpdateSystems.Invoke(args.Time);
+        Logger.PrintQueue();
     }
 
     protected override void OnRenderFrame(FrameEventArgs args)

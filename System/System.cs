@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Reflection;
-using System.Threading.Tasks;
 using ECS.Components;
 using ECS.Events;
 using ECS.Logs;
@@ -13,14 +12,26 @@ public class EntitySystem
     [SystemDependency] protected EventManager _evMan = default!;
     [SystemDependency] protected CompManager _compMan = default!;
 
+
     public EntitySystem()
     {
     }
 
+    /// <summary>
+    /// Called once per frame by Window object.
+    /// </summary>
+    /// <remarks>
+    /// This is called before frame is rendered.
+    /// </remarks>
+    /// <param name="deltaT">The time elapsed since the last frame. In seconds.</param>
     public virtual void Update(double deltaT)
     {
 
     }
+
+    /// <summary>
+    /// Called once when all dependencies of this were injected.
+    /// </summary>
     public virtual void Init()
     {
     }
@@ -96,29 +107,35 @@ public class EntSysManager
         var entSyss = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.IsClass
                                                                             && EntSysType.IsAssignableFrom(t));
 
-        // Create Tasks
+        // Create Task List
         var tasks = new List<Task>();
 
-
+        // Fill the list with Init tasks
         foreach (var sysT in entSyss)
         {
             tasks.Add(Task.Run(() => InitSystem(sysT, verbouse)));
         }
 
+        // Wait for initialization
         await Task.WhenAll(tasks);
+        tasks = []; // empty the list;
 
+        // Fill the list with Inject tasks
         foreach (var sys in InitializedSystems.ToList())
         {
             tasks.Add(InjectDependencies(sys, verbouse));
         }
+        // Wait for injection
         await Task.WhenAll(tasks);
+        stopwatch.Stop();
+        Logger.LogInfo($"Initialized {InitializedSystems.Count} systems in {stopwatch.ElapsedMilliseconds}ms", true, ConsoleColor.Green);
+
+        // Call the init method
         foreach (var sys in InitializedSystems.ToList())
         {
             sys.Init();
         }
 
-        stopwatch.Stop();
-        Logger.LogInfo($"Initialized {InitializedSystems.Count} systems in {stopwatch.ElapsedMilliseconds}ms", true, ConsoleColor.Green);
     }
 
     public void InitSystem(Type system, bool verbouse = false)

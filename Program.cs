@@ -14,6 +14,7 @@ class Program
             var sysMan = new EntSysManager();
             sysMan.InitAllSystems().GetAwaiter().GetResult();
 
+            // Force print messages from initializing
             Logger.PrintQueue();
 
             using (MyWindow window = new(1300, 700, sysMan.UpdateAll))

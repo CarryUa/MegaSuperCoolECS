@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 namespace ECS.Logs;
 
 internal enum LogType : byte
@@ -18,7 +20,7 @@ internal struct LogMessage(object? msg, bool fancy, ConsoleColor color, LogType 
 
 public static class Logger
 {
-    private static readonly Queue<LogMessage> _logQueue = new();
+    private static readonly ConcurrentQueue<LogMessage> _logQueue = new();
 
     /// <summary>
     /// Logs a debug message to the console.
@@ -115,44 +117,44 @@ public static class Logger
 
     public static void PrintQueue()
     {
+        void PrintWithPrefix(string prefix, LogMessage log)
+        {
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("[INFO] ");
+            Console.ResetColor();
+            if (log.Fancy)
+                PrintFancy($"{log.Message}", log.FancyColor);
+            else
+                Console.Write(log.Message + "\n");
+        }
 
         // print all the messages in queue
-        foreach (var log in _logQueue.ToList())
+        while (_logQueue.TryDequeue(out var log))
         {
+            // Null check to prevent empty messages
+            if (string.IsNullOrWhiteSpace($"{log.Message}"))
+            {
+                Logger.LogError("Tried to print empty object!");
+                continue;
+            }
+
+
             // Print different color depending on type.
             switch (log.LogType)
             {
                 case LogType.Info:
                     {
-                        Console.ForegroundColor = ConsoleColor.Cyan;
-                        Console.Write("[INFO] ");
-                        Console.ResetColor();
-                        if (log.Fancy)
-                            PrintFancy($"{log.Message}", log.FancyColor);
-                        else
-                            Console.Write(log.Message + "\n");
+                        PrintWithPrefix("[INFO]", log);
                         break;
                     }
                 case LogType.Debug:
                     {
-                        Console.ForegroundColor = ConsoleColor.DarkBlue;
-                        Console.Write("[DEBUG] ");
-                        Console.ResetColor();
-                        if (log.Fancy)
-                            PrintFancy($"{log.Message}", log.FancyColor);
-                        else
-                            Console.Write(log.Message + "\n");
+                        PrintWithPrefix("[DEBUG]", log);
                         break;
                     }
                 case LogType.Error:
                     {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.Write("[ERR] ");
-                        Console.ResetColor();
-                        if (log.Fancy)
-                            PrintFancy($"{log.Message}", log.FancyColor);
-                        else
-                            Console.Write(log.Message + "\n");
+                        PrintWithPrefix("[ERROR]", log);
                         break;
                     }
             }
