@@ -1,7 +1,5 @@
-﻿using System.Diagnostics;
-using System.Threading.Tasks;
-using ECS.Logs;
-using ECS.Systems;
+﻿using ECS.Logs;
+using ECS.System;
 using MyOpenTKWindow;
 class Program
 {
@@ -9,7 +7,6 @@ class Program
     {
         try
         {
-
             // Instantiate EntSys
             var sysMan = new EntSysManager();
             sysMan.InitAllSystems().GetAwaiter().GetResult();

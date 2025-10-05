@@ -1,18 +1,16 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
 using ECS.Components;
 using ECS.Events;
+using ECS.Events.AllSystemsInitializedEvent;
 using ECS.Logs;
 
-namespace ECS.Systems;
+namespace ECS.System;
 
 [InjectableDependency]
 public class EntitySystem
 {
-    [SystemDependency] protected EventManager _evMan = default!;
-    [SystemDependency] protected CompManager _compMan = default!;
-
-
     public EntitySystem()
     {
     }
@@ -36,51 +34,15 @@ public class EntitySystem
     {
     }
 
-    public void SubscribeEvent<TComp, TEv>(Action<TComp, TEv> action)
+    protected void SubscribeEvent<TComp, TEv>(Action<TComp, TEv> action)
     where TComp : Component
-    where TEv : Event
+    where TEv : IEvent
     {
-        var _event = new Event();
-        var act = new Action<Component, Event>((comp, ev) =>
-            {
-                if (comp is TComp tComp && ev is TEv tEv)
-                {
-                    // Additional type check
-                    if (typeof(TComp) != tComp.GetType()) return;
-
-                    action(tComp, tEv);
-                }
-                else
-                    throw new Exception("Wrong Event Type Exception");
-            });
-
-
-        // Check if same component is subscribed already
-        if (_evMan.ActiveSubsctiptions.Where(ev => ev.Key.GetType() == typeof(TComp)).Count() > 0)
-        {
-            foreach (var sub in _evMan.ActiveSubsctiptions)
-            {
-                if (sub.Key.GetType() == typeof(TComp))
-                {
-                    sub.Value.Actions.Add(act);
-                    return;
-                }
-            }
-        }
-
-        _event.Actions.Add(act);
-
-        foreach (var comp in _compMan.Components.Where(c => c is TComp))
-        {
-            Logger.LogInfo($"Adding ({comp}, {_event}) Event to EventManager");
-            _evMan.ActiveSubsctiptions.Add(comp, _event);
-        }
-
-        Logger.LogInfo(_event.Actions);
+        EventManager.SubscribeEvent(action);
     }
-    public void RaiseEvent(Event ev)
+    protected void RaiseEvent(Event ev)
     {
-        _evMan.RaiseEvent(ev);
+        EventManager.RaiseEvent(ev);
     }
 }
 
@@ -88,7 +50,7 @@ public class EntitySystem
 
 public class EntSysManager
 {
-    public List<EntitySystem> InitializedSystems = [];
+    public ConcurrentBag<EntitySystem> InitializedSystems = [];
 
     public void UpdateAll(double deltaT)
     {
@@ -136,6 +98,8 @@ public class EntSysManager
             sys.Init();
         }
 
+        var ev = new AllSystemsInitializedEvent();
+        EventManager.RaiseEvent(ev);
     }
 
     public void InitSystem(Type system, bool verbouse = false)
@@ -173,7 +137,7 @@ public class EntSysManager
                 if (_classT == field.FieldType)
                 {
                     // Search for existing instance
-                    var instance = InitializedSystems.Find(sys => sys is not null && sys.GetType() == _classT);
+                    var instance = InitializedSystems.First(sys => sys is not null && sys.GetType() == _classT);
 
                     // Create new if doesn't exist
                     if (instance is null)

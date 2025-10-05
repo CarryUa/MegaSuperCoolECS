@@ -1,11 +1,16 @@
-using ECS.Systems;
+using ECS.System;
 using ECS.Logs;
 
 namespace ECS.Components;
 
-public class Component(int newId)
+public interface IComponent
 {
-    public int id
+    int Id { get; }
+}
+
+public class Component(int newId) : IComponent
+{
+    public int Id
     {
         get => _id;
     }
@@ -16,17 +21,17 @@ public class Component(int newId)
 
 public class CompManager() : EntitySystem
 {
-    public List<Component> Components { get => _components; }
-    private List<Component> _components = [];
+    public static List<IComponent> Components { get => _components; }
+    private static List<IComponent> _components = [];
 
-    public Component CreateComponent<TComp>() where TComp : Component
+    public static TComp CreateComponent<TComp>() where TComp : IComponent
     {
         var newId = _components.Count;
 
         var comp = Activator.CreateInstance(typeof(TComp), newId);
-        _components.Add((Component)comp!);
+        _components.Add((IComponent)comp!);
         Logger.LogInfo($"Creating new component of type {comp!.GetType()} : {comp.GetHashCode()} with Component.id {newId}", true, ConsoleColor.DarkBlue);
 
-        return (Component)comp!;
+        return (TComp)comp!;
     }
 }
