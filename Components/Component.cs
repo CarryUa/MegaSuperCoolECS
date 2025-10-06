@@ -19,12 +19,13 @@ public class Component(int newId) : IComponent
 
 };
 
-public class CompManager() : EntitySystem
+[NeedDependencies]
+public class CompManager()
 {
-    public static List<IComponent> Components { get => _components; }
-    private static List<IComponent> _components = [];
+    public List<IComponent> Components { get => _components; }
+    private List<IComponent> _components = [];
 
-    public static TComp CreateComponent<TComp>() where TComp : IComponent
+    public TComp CreateComponent<TComp>() where TComp : IComponent
     {
         var newId = _components.Count;
 

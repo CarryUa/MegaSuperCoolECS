@@ -1,5 +1,5 @@
 using ECS.Components;
-using ECS.Logs;
+using ECS.System;
 namespace ECS.Events;
 
 public interface IEvent
@@ -14,10 +14,13 @@ public class Event : IEvent
     public Action<IComponent, IEvent> Action { get; set; } = (comp, ev) => { }; // Empty action
 }
 
+[NeedDependencies]
 public sealed class EventManager
 {
-    private static Queue<KeyValuePair<IComponent, IEvent>> ActiveSubscriptions = new();
-    public static void SubscribeEvent<TComp, TEv>(Action<TComp, TEv> action)
+    [SystemDependency] private readonly CompManager _compMan = default!;
+    private Queue<KeyValuePair<IComponent, IEvent>> ActiveSubscriptions = new();
+
+    public void SubscribeEvent<TComp, TEv>(Action<TComp, TEv> action)
     where TComp : Component
     where TEv : IEvent
     {
@@ -39,7 +42,7 @@ public sealed class EventManager
         _event.Action += act;
 
         // Iterate through all components of type TComp and subscribe them to this event.
-        foreach (var comp in CompManager.Components.Where(c => c is TComp))
+        foreach (var comp in _compMan.Components.Where(c => c is TComp))
         {
             // Fill the queue with component-event pairs
             // KeyValuePair<Component, IEvent>
@@ -47,7 +50,7 @@ public sealed class EventManager
         }
     }
 
-    public static void RaiseEvent<TEv>(TEv ev)
+    public void RaiseEvent<TEv>(TEv ev)
     where TEv : IEvent
     {
         foreach (var subscription in ActiveSubscriptions)

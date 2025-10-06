@@ -66,6 +66,7 @@ public static class Logger
     /// <param name="color">The color to print numeric values and trailing strings. Defaults to DarkBlue.</param>
     public static void LogFatal(object? msg, bool fancy = false, ConsoleColor color = ConsoleColor.DarkBlue)
     {
+        PrintQueue();
         Console.ForegroundColor = ConsoleColor.DarkMagenta;
         Console.Write("[FATAL] ");
         Console.ResetColor();
@@ -87,6 +88,7 @@ public static class Logger
     /// <param name="color">The color to print numeric values and trailing strings. Defaults to DarkBlue.</param>
     public static void LogFatal(Exception ex, bool fancy = false, ConsoleColor color = ConsoleColor.DarkBlue)
     {
+        PrintQueue();
         Console.ForegroundColor = ConsoleColor.DarkMagenta;
         Console.Write("[FATAL] ");
         Console.ResetColor();
@@ -119,8 +121,7 @@ public static class Logger
     {
         void PrintWithPrefix(string prefix, LogMessage log)
         {
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write("[INFO] ");
+            Console.Write($"{prefix} ");
             Console.ResetColor();
             if (log.Fancy)
                 PrintFancy($"{log.Message}", log.FancyColor);
@@ -144,16 +145,19 @@ public static class Logger
             {
                 case LogType.Info:
                     {
+                        Console.ForegroundColor = ConsoleColor.Cyan;
                         PrintWithPrefix("[INFO]", log);
                         break;
                     }
                 case LogType.Debug:
                     {
+                        Console.ForegroundColor = ConsoleColor.DarkBlue;
                         PrintWithPrefix("[DEBUG]", log);
                         break;
                     }
                 case LogType.Error:
                     {
+                        Console.ForegroundColor = ConsoleColor.Red;
                         PrintWithPrefix("[ERROR]", log);
                         break;
                     }
