@@ -1,14 +1,16 @@
 ﻿using ECS.Logs;
 using ECS.System;
 using MyOpenTKWindow;
+
+[NeedDependencies]
 class Program
 {
     public static void Main()
     {
         try
         {
-            // Instantiate EntSys
-            var sysMan = new EntSysManager();
+            // Instantiate EntitySystemManager
+            var sysMan = new EntitySystemManager();
             sysMan.InitAllSystems().GetAwaiter().GetResult();
 
             // Force print messages from initializing

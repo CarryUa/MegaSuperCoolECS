@@ -21,7 +21,7 @@ public sealed class EventManager
     private Queue<KeyValuePair<IComponent, IEvent>> ActiveSubscriptions = new();
 
     public void SubscribeEvent<TComp, TEv>(Action<TComp, TEv> action)
-    where TComp : Component
+    where TComp : IComponent
     where TEv : IEvent
     {
         var _event = Activator.CreateInstance<TEv>();
