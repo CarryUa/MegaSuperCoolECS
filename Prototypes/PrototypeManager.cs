@@ -51,7 +51,7 @@ public class PrototypeManager
 
         // The path to the prototypes folder
         string protoPath = Directory.GetCurrentDirectory() + "/Prototypes";
-        var protoFiles = Directory.EnumerateFiles(protoPath, "*.json");
+        var protoFiles = Directory.EnumerateFiles(protoPath, "*.json", SearchOption.AllDirectories);
 
         foreach (var file in protoFiles)
         {
