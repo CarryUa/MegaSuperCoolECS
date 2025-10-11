@@ -17,24 +17,8 @@ public class EntitySystemManager
     [SystemDependency] private readonly PrototypeManager _protoMan = default!;
     [SystemDependency] private readonly EventManager _evMan = default!;
 
-    public List<EntitySystem> InitializedSystems { get => GetEntitySystems(_injectableInstances); }
+    public List<EntitySystem> InitializedSystems { get => _injectableInstances.OfType<EntitySystem>().ToList(); }
     public List<object> InjectableInstances { get => _injectableInstances.ToList(); }
-
-    /// <summary>
-    /// Effectively converts ConcurrentBag<object> to List<EntitySystem> by filtering the objects.
-    /// </summary>
-    /// <param name="objects">The list of objects to convert.</param>
-    /// <returns></returns>
-    private List<EntitySystem> GetEntitySystems(ConcurrentBag<object> objects)
-    {
-        var returnList = new List<EntitySystem>();
-        foreach (var obj in objects)
-        {
-            if (typeof(EntitySystem).IsAssignableFrom(obj.GetType()))
-                returnList.Add((EntitySystem)obj);
-        }
-        return returnList;
-    }
 
     /// <summary>
     /// List for instaces that can be injected including systems.
@@ -82,6 +66,7 @@ public class EntitySystemManager
                 Logger.LogDebug($"Initializing system {sys!.GetType()} : {sys!.GetHashCode()}", true, ConsoleColor.DarkBlue);
         }
 
+        // Start stopwatch
         Stopwatch stopwatch = Stopwatch.StartNew();
 
         // Get all classes needing dependency injectiion (Including systems)
@@ -115,7 +100,7 @@ public class EntitySystemManager
         stopwatch.Restart();
 
         // Load prototypes
-        _protoMan.LoadPrototypes();
+        _protoMan.LoadPrototypes(verbouse);
         stopwatch.Stop();
         Logger.LogInfo($"Loaded {_protoMan.Prototypes.Count} prototypes in {stopwatch.ElapsedMilliseconds}ms", true, ConsoleColor.Green);
 
@@ -135,7 +120,7 @@ public class EntitySystemManager
     /// Injects all dependencies into the given object.
     /// </summary>
     /// <param name="obj">The object needing dependencies.</param>
-    /// <param name="v"></param>
+    /// <param name="v">Verbose logging flag.</param>
     /// <returns>Task representing injection of all dependencies.</returns>
     public async Task InjectDependencies(object obj, bool v = false)
     {

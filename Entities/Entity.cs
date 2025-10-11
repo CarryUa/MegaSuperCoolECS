@@ -4,10 +4,26 @@ namespace ECS.Entities;
 
 public interface IEntity
 {
+    /// <summary>
+    /// The unique identifier of this entity.
+    /// </summary>
     int Id { get; }
+
+    /// <summary>
+    /// List of components attached to given entity.
+    /// </summary>
     List<IComponent> Components { get; }
 
+    /// <summary>
+    /// Attaches component to this entity.
+    /// </summary>
+    /// <param name="comp">The component to be attached.</param>
     void AttachComponent(IComponent comp);
+
+    /// <summary>
+    /// Detaches component from this entity.
+    /// </summary>
+    /// <param name="comp">The component to be detached.</param>
     void DetachComponent(IComponent comp);
 };
 

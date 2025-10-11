@@ -37,12 +37,25 @@ public class EntitySystem
     {
     }
 
+    /// <summary>
+    /// Subsctibes all components of given type to given event type.
+    /// </summary>
+    /// <typeparam name="TComp"></typeparam>
+    /// <typeparam name="TEv"></typeparam>
+    /// <param name="action">The callback function that will be invoked when the event is raised.</param>
+    /// <exception cref="InvalidCastException"></exception>
     protected void SubscribeEvent<TComp, TEv>(Action<TComp, TEv> action)
     where TComp : IComponent
     where TEv : IEvent
     {
         _evMan.SubscribeEvent(action);
     }
+
+    /// <summary>
+    /// Raises the given event by invoking all callbacks.
+    /// </summary>
+    /// <typeparam name="TEv"></typeparam>
+    /// <param name="ev"></param>
     protected void RaiseEvent(Event ev)
     {
         _evMan.RaiseEvent(ev);

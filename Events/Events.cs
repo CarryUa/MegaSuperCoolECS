@@ -8,18 +8,31 @@ public interface IEvent
     Action<IComponent, IEvent> Action { get; set; }
 }
 
+/// <summary>
+/// Basic event. All events should inherit from it.
+/// </summary>
 public class Event : IEvent
 {
     public bool Handled { get; set; }
     public Action<IComponent, IEvent> Action { get; set; } = (comp, ev) => { }; // Empty action
 }
 
+/// <summary>
+/// Handles the subsctiption and rising of the events.
+/// </summary>
 [NeedDependencies]
 public sealed class EventManager
 {
     [SystemDependency] private readonly CompManager _compMan = default!;
     private Queue<KeyValuePair<IComponent, IEvent>> ActiveSubscriptions = new();
 
+    /// <summary>
+    /// Subsctibes all components of given type to given event type.
+    /// </summary>
+    /// <typeparam name="TComp"></typeparam>
+    /// <typeparam name="TEv"></typeparam>
+    /// <param name="action">The callback function that will be invoked when the event is raised.</param>
+    /// <exception cref="InvalidCastException"></exception>
     public void SubscribeEvent<TComp, TEv>(Action<TComp, TEv> action)
     where TComp : IComponent
     where TEv : IEvent
@@ -37,7 +50,7 @@ public sealed class EventManager
                     action(tComp, tEv);
                 }
                 else
-                    throw new Exception("Wrong Event Type Exception");
+                    throw new InvalidCastException("Wrong Event Type Exception");
             });
         _event.Action += act;
 
@@ -50,6 +63,11 @@ public sealed class EventManager
         }
     }
 
+    /// <summary>
+    /// Raises the given event by invoking all callbacks.
+    /// </summary>
+    /// <typeparam name="TEv"></typeparam>
+    /// <param name="ev"></param>
     public void RaiseEvent<TEv>(TEv ev)
     where TEv : IEvent
     {

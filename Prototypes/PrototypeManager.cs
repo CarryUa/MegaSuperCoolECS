@@ -18,6 +18,10 @@ public class PrototypeManager
     /// </summary>
     public List<IPrototype> Prototypes => _prototypes;
 
+    /// <summary>
+    /// Loads all the prototypes availible in relevant directory.
+    /// </summary>
+    /// <param name="verbouse"></param>
     public void LoadPrototypes(bool verbouse = false)
     {
         void LoadPrototype(string filePath)
@@ -69,6 +73,13 @@ public class PrototypeManager
 
     }
 
+    /// <summary>
+    /// Gets the loaded prototype by it's id.
+    /// </summary>
+    /// <typeparam name="TProto"></typeparam>
+    /// <param name="id"></param>
+    /// <returns>The loaded prototype.</returns>
+    /// <exception cref="KeyNotFoundException"></exception>
     public TProto GetPrototype<TProto>(string id)
     where TProto : IPrototype
     {
@@ -81,11 +92,15 @@ public class PrototypeManager
     }
 }
 
+/// <summary>
+/// Basic interface for all the prototypes.
+/// </summary>
 public interface IPrototype
 {
     /// <summary>
     /// The unique ID of this prototype.
     /// </summary>
     public string Id { get; }
+    // TODO: Implement this.
     public string Type { get; }
 }

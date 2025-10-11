@@ -11,7 +11,7 @@ class Program
         {
             // Instantiate EntitySystemManager
             var sysMan = new EntitySystemManager();
-            sysMan.InitAllSystems().GetAwaiter().GetResult();
+            sysMan.InitAllSystems(true).GetAwaiter().GetResult();
 
             // Force print messages from initializing
             Logger.PrintQueue();
