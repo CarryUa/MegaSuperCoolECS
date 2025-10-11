@@ -1,4 +1,5 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project
+   Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
@@ -7,11 +8,20 @@
     <RootNamespace>ECS</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="OpenTK" Version="4.9.4" />
+    <PackageReference
+       Include="Newtonsoft.Json"
+       Version="13.0.4"/>
+    <PackageReference
+       Include="OpenTK"
+       Version="4.9.4"/>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\**\*">
+    <None
+       Include="Shaders\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None
+       Include="Prototypes\**\*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

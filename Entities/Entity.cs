@@ -17,20 +17,29 @@ public class Entity : IEntity
     public List<IComponent> Components { get; }
 
     private int _id;
-    private List<IComponent> components = new List<IComponent>();
+    private List<IComponent> _components = new List<IComponent>();
+
+    public string Name { get; set; } = "";
 
     public Entity(int id)
     {
         Id = id;
-        Components = components;
+        Components = _components;
     }
 
     public void AttachComponent(IComponent comp)
     {
+        if (!_components.Contains(comp))
+        {
+            _components.Add(comp);
+        }
     }
     public void DetachComponent(IComponent comp)
     {
-
+        if (_components.Contains(comp))
+        {
+            _components.Remove(comp);
+        }
     }
 
     public override string ToString()

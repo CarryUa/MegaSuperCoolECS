@@ -1,4 +1,5 @@
 using System.Reflection;
+using ECS.Components;
 using ECS.Logs;
 using ECS.System;
 using Newtonsoft.Json;
@@ -8,6 +9,8 @@ namespace ECS.Prototypes;
 [NeedDependencies]
 public class PrototypeManager
 {
+    [SystemDependency] private readonly CompManager _compMan = default!;
+
     private List<IPrototype> _prototypes = new List<IPrototype>();
 
     /// <summary>
@@ -27,15 +30,18 @@ public class PrototypeManager
             string typeName = j["Type"]!.ToString();
 
             // Find the matching prototype type and remove if from list
-            var protoType = _prototypes.FirstOrDefault(p => p.GetType().Name == typeName && !p.GetType().IsAbstract);
-            _prototypes.Remove(protoType!);
+            var proto = _prototypes.FirstOrDefault(p => p.GetType().Name == typeName && !p.GetType().IsAbstract);
+            _prototypes.Remove(proto!);
 
             // Fill the prototype with data from JSON
-            var finalType = protoType!.GetType();
-            protoType = j.ToObject(finalType)! as IPrototype;
+            var finalType = proto!.GetType();
+            var serializer = new JsonSerializer();
+            serializer.Converters.Add(new JSONComponentConverter(_compMan));
+            proto = j.ToObject(finalType, serializer)! as IPrototype;
+
 
             // Add the filled prototype back to the list
-            _prototypes.Add(protoType!);
+            _prototypes.Add(proto!);
         }
 
         // Fill the prototypes with placeholders
@@ -82,20 +88,4 @@ public interface IPrototype
     /// </summary>
     public string Id { get; }
     public string Type { get; }
-}
-
-public class Prototype : IPrototype
-{
-    public string Id { get; set; } = "";
-    public string Type { get; set; } = "";
-
-    public int TestField = 0;
-}
-
-public class AnotherPrototype : IPrototype
-{
-    public string Id { get; set; } = "";
-    public string Type { get; set; } = "";
-
-    public string AnotherField = "Hello World";
 }
