@@ -23,7 +23,7 @@ public class Event : IEvent
 [NeedDependencies]
 public sealed class EventManager
 {
-    [SystemDependency] private readonly CompManager _compMan = default!;
+    [SystemDependency] private readonly ComponentManager _compMan = default!;
     private Queue<KeyValuePair<IComponent, IEvent>> ActiveSubscriptions = new();
 
     /// <summary>

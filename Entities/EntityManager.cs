@@ -8,7 +8,7 @@ namespace ECS.Entities;
 public class EntityManager
 {
     [SystemDependency] private readonly PrototypeManager _protoMan = default!;
-    [SystemDependency] private readonly CompManager _compMan = default!;
+    [SystemDependency] private readonly ComponentManager _compMan = default!;
 
     /// <summary>
     /// List of all known entities.

@@ -9,9 +9,9 @@ namespace ECS.Prototypes;
 
 public class JSONComponentConverter : JsonConverter
 {
-    private readonly CompManager _compManager;
+    private readonly ComponentManager _compManager;
 
-    public JSONComponentConverter(CompManager compManager)
+    public JSONComponentConverter(ComponentManager compManager)
     {
         _compManager = compManager;
     }

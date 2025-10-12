@@ -9,7 +9,7 @@ namespace ECS.Prototypes;
 [NeedDependencies]
 public class PrototypeManager
 {
-    [SystemDependency] private readonly CompManager _compMan = default!;
+    [SystemDependency] private readonly ComponentManager _compMan = default!;
 
     private List<IPrototype> _prototypes = new List<IPrototype>();
 
