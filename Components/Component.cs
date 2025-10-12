@@ -143,9 +143,16 @@ public class CompManager()
         var newType = _componentTypes.FirstOrDefault(t => t.Name == comp.GetType().Name);
         var newComp = CreateComponent(newType!);
         // Go over all the fields of new copy, and set it's values to other's
-        foreach (var field in newComp.GetType().GetFields())
+        foreach (var field in newComp.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
         {
             field.SetValue(newComp, field.GetValue(comp));
+        }
+
+        // Go over all the properties of new copy, and set it's values to other's
+        foreach (var prop in newComp.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+        {
+            if (!prop.CanWrite) continue;
+            prop.SetValue(newComp, prop.GetValue(comp));
         }
 
         return newComp;
