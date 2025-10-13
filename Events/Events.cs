@@ -5,7 +5,18 @@ namespace ECS.Events;
 public interface IEvent
 {
     bool Handled { get; set; }
-    Action<IComponent, IEvent> Action { get; set; }
+}
+
+/// <summary>
+/// 
+/// </summary>
+/// <param name="tcomp"></param>
+/// <param name="tev"></param>
+public class EventSubscription(Type tcomp, Type tev, Action<IComponent, IEvent> action)
+{
+    public Type ComponentType { get; } = tcomp;
+    public Type EventType { get; } = tev;
+    public Action<IComponent, IEvent> Action { get; } = action;
 }
 
 /// <summary>
@@ -14,7 +25,6 @@ public interface IEvent
 public class Event : IEvent
 {
     public bool Handled { get; set; }
-    public Action<IComponent, IEvent> Action { get; set; } = (comp, ev) => { }; // Empty action
 }
 
 /// <summary>
@@ -24,7 +34,8 @@ public class Event : IEvent
 public sealed class EventManager
 {
     [SystemDependency] private readonly ComponentManager _compMan = default!;
-    private Queue<KeyValuePair<IComponent, IEvent>> ActiveSubscriptions = new();
+    // <IComponent, Type>, action = <comp, TEv>, action
+    private Queue<EventSubscription> ActiveSubscriptions = new();
 
     /// <summary>
     /// Subsctibes all components of given type to given event type.
@@ -37,8 +48,6 @@ public sealed class EventManager
     where TComp : IComponent
     where TEv : IEvent
     {
-        var _event = Activator.CreateInstance<TEv>();
-
         // Wrap the action in additional type checks.
         var act = new Action<IComponent, IEvent>((comp, ev) =>
             {
@@ -52,29 +61,28 @@ public sealed class EventManager
                 else
                     throw new InvalidCastException("Wrong Event Type Exception");
             });
-        _event.Action += act;
 
-        // Iterate through all components of type TComp and subscribe them to this event.
-        foreach (var comp in _compMan.Components.Where(c => c is TComp))
-        {
-            // Fill the queue with component-event pairs
-            // KeyValuePair<Component, IEvent>
-            ActiveSubscriptions.Enqueue(new(comp, _event));
-        }
+        // Fill the queue with (component-event)-action pairs
+        // KeyValuePair<(Component, IEvent), action>
+        ActiveSubscriptions.Enqueue(new(typeof(TComp), typeof(TEv), act));
     }
 
     /// <summary>
     /// Raises the given event by invoking all callbacks.
     /// </summary>
-    /// <typeparam name="TEv"></typeparam>
     /// <param name="ev"></param>
-    public void RaiseEvent<TEv>(TEv ev)
-    where TEv : IEvent
+    public void RaiseEvent(IEvent ev)
     {
-        foreach (var subscription in ActiveSubscriptions)
+        foreach (var subscription in ActiveSubscriptions.ToList())
         {
-            if (subscription.Value.GetType() == ev.GetType())
-                subscription.Value.Action.Invoke(subscription.Key, ev);
+            if (subscription.EventType == ev.GetType())
+            {
+                foreach (var comp in _compMan.Components.Where(c => c.GetType() == subscription.ComponentType).ToList())
+                {
+
+                    subscription.Action(comp, ev);
+                }
+            }
         }
     }
 }

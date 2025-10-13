@@ -60,4 +60,9 @@ public class EntitySystem
     {
         _evMan.RaiseEvent(ev);
     }
+
+    public override string ToString()
+    {
+        return $"{this.GetType()} : {this.GetHashCode()}";
+    }
 }

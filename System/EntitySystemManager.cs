@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
 using ECS.Events;
-using ECS.Events.AllSystemsInitializedEvent;
+using ECS.Events.SystemEvents;
 using ECS.Logs;
 using ECS.Prototypes;
 

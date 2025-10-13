@@ -1,4 +1,6 @@
 using ECS.Components;
+using ECS.Events;
+using ECS.Events.EntityEvents;
 using ECS.Prototypes;
 using ECS.Prototypes.Entities;
 using ECS.System;
@@ -9,6 +11,7 @@ public class EntityManager
 {
     [SystemDependency] private readonly PrototypeManager _protoMan = default!;
     [SystemDependency] private readonly ComponentManager _compMan = default!;
+    [SystemDependency] private readonly EventManager _eventMan = default!;
 
     /// <summary>
     /// List of all known entities.
@@ -43,6 +46,7 @@ public class EntityManager
         }
 
         _entities.Add(entity);
+        _eventMan.RaiseEvent(new EntityCreatedEvent(entity.Id));
         return entity;
     }
 
