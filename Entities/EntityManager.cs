@@ -41,7 +41,7 @@ public class EntityManager
 
         foreach (var comp in proto?.Components ?? [])
         {
-            var concrete = comp.GetType();
+            comp.OwnerID = entity.Id;
             entity.AttachComponent(_compMan.CloneComponent(comp));
         }
 

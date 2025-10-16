@@ -5,7 +5,15 @@ namespace ECS.Components;
 /// </summary>
 public interface IComponent
 {
+    /// <summary>
+    /// The unique identifier of this component.
+    /// </summary>
     int Id { get; }
+
+    /// <summary>
+    /// The ID of the entity that owns this component.
+    /// </summary>
+    int OwnerID { get; set; }
 }
 
 /// <summary>
@@ -21,6 +29,8 @@ public class Component(int newId) : IComponent
     {
         get => _id;
     }
+
+    public int OwnerID { get; set; }
 
     protected int _id { get; } = newId;
 };

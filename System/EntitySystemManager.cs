@@ -8,6 +8,27 @@ using ECS.Prototypes;
 
 namespace ECS.System;
 
+public enum InitPriority : byte
+{
+    Low,
+    Medium,
+    High
+}
+public class EntitySystemComparer : IComparer<EntitySystem>
+{
+    int IComparer<EntitySystem>.Compare(EntitySystem? x, EntitySystem? y)
+    {
+        // if both are null - they're equal.
+        if (x is null && y is null)
+            return 0;
+
+        if (x is null) return -1; // if only x instance is null - x is worse.
+        if (y is null) return 1; // if only y instance is null - x is better.
+
+        return x.CompareTo(y);
+    }
+}
+
 /// <summary>
 /// Manages the initialization and updating of all EntitySystems. Also handles dependency injection and starts the loading of prototypes via <see cref="PrototypeManager.LoadPrototypes"/>.
 /// </summary>
@@ -104,8 +125,12 @@ public class EntitySystemManager
         stopwatch.Stop();
         Logger.LogInfo($"Loaded {_protoMan.Prototypes.Count} prototypes in {stopwatch.ElapsedMilliseconds}ms", true, ConsoleColor.Green);
 
+        // Sort systems by priority attribute
+        List<EntitySystem> initList = InitializedSystems;
+        initList.Sort(new EntitySystemComparer());
+
         // Call the init method
-        foreach (var sys in InitializedSystems.ToList())
+        foreach (var sys in initList.ToList())
         {
             sys.Init();
         }
@@ -188,5 +213,14 @@ public sealed class SystemDependency : Attribute
 [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
 public sealed class NeedDependencies : Attribute
 {
+}
+
+/// <summary>
+/// Used for Systems and other classes that require initialization. Defines Priority of initialization. Classes without Priority will be initialized last.
+/// </summary>
+[AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
+public sealed class InitializationPriority(InitPriority Priority) : Attribute
+{
+    public InitPriority Priority { get; } = Priority;
 }
 #endregion

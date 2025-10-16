@@ -1,10 +1,12 @@
+using System.Reflection;
 using ECS.Components;
 using ECS.Events;
 
 namespace ECS.System;
 
 [NeedDependencies]
-public class EntitySystem
+[InitializationPriority(InitPriority.Low)]
+public class EntitySystem : IComparable<EntitySystem>
 {
 
     [SystemDependency]
@@ -64,5 +66,37 @@ public class EntitySystem
     public override string ToString()
     {
         return $"{this.GetType()} : {this.GetHashCode()}";
+    }
+
+    /// <inheritdoc/>
+    /// <exception cref="NullReferenceException">
+    /// </exception>
+    public int CompareTo(EntitySystem? other)
+    {
+        if (other is null)
+        {
+            throw new NullReferenceException($"Tried to compare {this} to unititialized {other}.");
+        }
+
+        var otherAttrib = other.GetType().GetCustomAttribute<InitializationPriority>();
+        var myAttrib = this.GetType().GetCustomAttribute<InitializationPriority>();
+
+        // If both attributes are null - they're equal.
+        if (myAttrib is null && otherAttrib is null) return 0;
+
+        // If only other' attribute is null - my is better.
+        if (otherAttrib is null) return -1;
+
+        // If only my attribute is null - my is worse.
+        if (myAttrib is null) return 1;
+
+        // Compare priorities.
+        if (myAttrib.Priority > otherAttrib.Priority)
+            return -1;
+        else if (myAttrib.Priority < otherAttrib.Priority)
+            return 1;
+
+        // Equal priority.
+        return 0;
     }
 }
