@@ -5,6 +5,7 @@ using ECS.Events;
 using ECS.Events.SystemEvents;
 using ECS.Logs;
 using ECS.Prototypes;
+using MyOpenTKWindow;
 
 namespace ECS.System;
 
@@ -48,10 +49,11 @@ public class EntitySystemManager
     private ConcurrentBag<object> _injectableInstances = [];
 
 
-    public EntitySystemManager()
+    public EntitySystemManager(MyWindow window)
     {
         // Add self to instances
         _injectableInstances.Add(this);
+        _injectableInstances.Add(window);
     }
 
     /// <summary>

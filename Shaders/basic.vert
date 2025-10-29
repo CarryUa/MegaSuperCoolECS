@@ -1,7 +1,14 @@
 #version 330 core
-in vec3 aPosition;
+layout (location = 0) in vec3 aPosition;   // the position variable has attribute position 0
+layout (location = 1) in vec3 aColor; // the color variable has attribute position 1
 
+uniform float aspect;
+
+out vec4 myColor;
 void main()
 {
-    gl_Position = vec4(aPosition, 1.0);
+    myColor = vec4(aColor, 1.0);
+    vec3 p = aPosition;
+    p.x /= aspect;
+    gl_Position = vec4(p, 1.0);
 }

@@ -1,6 +1,8 @@
 using System.Reflection;
 using ECS.Components;
+using ECS.Entities;
 using ECS.Events;
+using ECS.Logs;
 
 namespace ECS.System;
 
@@ -11,6 +13,8 @@ public class EntitySystem : IComparable<EntitySystem>
 
     [SystemDependency]
     protected readonly EventManager _evMan = default!;
+
+    [SystemDependency] private readonly EntityManager _entMan = default!;
     // public bool Initialized
     // {
     //     get => _entMan.InitializedSystems.First(obj => obj == this) is not null;
@@ -66,6 +70,71 @@ public class EntitySystem : IComparable<EntitySystem>
     public override string ToString()
     {
         return $"{this.GetType()} : {this.GetHashCode()}";
+    }
+
+    /// <summary>
+    /// Calls <see cref="Logger.LogInfo(object?, bool, ConsoleColor)"/> and adds the name of this system in the beggining of message
+    /// </summary>
+    public void LogInfo(object? msg, bool fancy = false, ConsoleColor color = ConsoleColor.DarkBlue)
+    {
+        msg = $"{this.GetType().Name}: " + msg;
+        Logger.LogInfo(msg, fancy, color);
+    }
+
+    /// <summary>
+    /// Calls <see cref="Logger.LogError(object?, bool, ConsoleColor)"/> and adds the name of this system in the beggining of message
+    /// </summary>
+    public void LogError(object? msg, bool fancy = false, ConsoleColor color = ConsoleColor.DarkBlue)
+    {
+        msg = $"{this.GetType().Name}: " + msg;
+        Logger.LogError(msg, fancy, color);
+    }
+
+    /// <summary>
+    /// Calls <see cref="Logger.LogDebug(object?, bool, ConsoleColor)"/> and adds the name of this system in the beggining of message
+    /// </summary>
+    public void LogDebug(object? msg, bool fancy = false, ConsoleColor color = ConsoleColor.DarkBlue)
+    {
+        msg = $"{this.GetType().Name}: " + msg;
+
+        Logger.LogDebug(msg, fancy, color);
+    }
+
+    public bool HasComp<TComp>(int id)
+    where TComp : IComponent
+    {
+        var ent = _entMan.GetEntityById(id);
+        if (ent is null) return false;
+        if (ent.Components.Any(c => c.GetType() == typeof(TComp))) return true;
+        return false;
+    }
+    public bool HasComp<TComp>(IEntity ent)
+    where TComp : IComponent
+    {
+        if (ent is null) return false;
+        if (ent.Components.Any(c => c.GetType() == typeof(TComp))) return true;
+        return false;
+    }
+
+    public bool TryGetComp<TComp>(int id, out TComp? component)
+    where TComp : IComponent
+    {
+        component = default;
+        var ent = _entMan.GetEntityById(id);
+        if (ent is null) return false;
+
+        component = (TComp?)ent.Components.FirstOrDefault(c => c.GetType() == typeof(TComp));
+        return component is not null;
+    }
+
+    public bool TryGetComp<TComp>(IEntity ent, out TComp? component)
+    where TComp : IComponent
+    {
+        component = default;
+        if (ent is null) return false;
+
+        component = (TComp?)ent.Components.FirstOrDefault(c => c.GetType() == typeof(TComp));
+        return component is not null;
     }
 
     /// <inheritdoc/>

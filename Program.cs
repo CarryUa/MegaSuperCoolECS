@@ -9,14 +9,17 @@ class Program
     {
         try
         {
+            MyWindow window = new();
             // Instantiate EntitySystemManager
-            var sysMan = new EntitySystemManager();
-            sysMan.InitAllSystems().GetAwaiter().GetResult();
+            var sysMan = new EntitySystemManager(window);
+            sysMan.InitAllSystems(true).GetAwaiter().GetResult();
+
+            window.Init(1000, 1000);
 
             // Force print messages from initializing
             Logger.PrintQueue();
 
-            using (MyWindow window = new(1300, 700, sysMan.UpdateAll))
+            using (window)
             {
                 window.Run();
             }

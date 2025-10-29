@@ -1,35 +1,68 @@
+using ECS.Components;
+using ECS.Components.Transform;
 using ECS.Logs;
+using ECS.System;
+using ECS.System.Time;
 using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 
 namespace MyOpenTKWindow;
 
-class MyWindow : GameWindow
+[NeedDependencies]
+public class MyWindow : GameWindow
 {
-    public static int SCREENWIDTH;
-    public static int SCREENHEIGHT;
+    [SystemDependency] private readonly EntitySystemManager _sysMan = default!;
+    [SystemDependency] private readonly ComponentManager _compMan = default!;
+    [SystemDependency] private readonly TimeSystem _time = default!;
 
-    public Action<double> UpdateSystems;
+    public Vector2i ScreenSize
+    {
+        get => _screenSize;
+        set
+        {
+            _screenSize = value;
+            _aspect = (float)value.X / (float)value.Y;
+            Shader?.SetAspectUniform(_aspect);
+            GL.Viewport(0, 0, value.X, value.Y);
+        }
+    }
+    private Vector2i _screenSize;
+
+    public float Apsect { get => _aspect; }
+    private float _aspect;
+
+    private float t = 0;
 
     private Shader? Shader { get; set; }
+
+    private int[] _indecies = {
+            0,1,3,
+            1,2,3};
+    private float[] vertices = {
+            0.5f,  0.5f, 0.0f, 1f, 0, 0,  // top right
+            0.5f, -0.5f, 0.0f, 0, 1f, 0,  // bottom right
+           -0.5f, -0.5f, 0.0f, 0, 0, 1f, // bottom left
+           -0.5f,  0.5f, 0.0f, 1f, 1f, 0 // top left
+                            };
+
+    private int _vbo;
+    private int _vao;
+    private int _ebo;
+
+    // Parametrless constructor for Activator.CreateInstance(Type);
+    public MyWindow() : base(GameWindowSettings.Default, NativeWindowSettings.Default)
+    {
+    }
 
     /// <summary>
     ///  
     /// </summary>
     /// <param name="w">Width of the screen</param>
     /// <param name="h">Height of the screen</param>
-    /// <param name="updateAction">Action to be called to update systems</param>
-    public MyWindow(int w, int h, Action<double> updateAction) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
+    public MyWindow(int w, int h) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
     {
-        SCREENHEIGHT = h;
-        SCREENWIDTH = w;
-        UpdateSystems += updateAction;
-        this.CenterWindow(new(w, h));
-    }
-    protected override void OnLoad()
-    {
-        base.OnLoad();
         try
         {
             Shader = new Shader("Shaders/basic.vert", "Shaders/basic.frag");
@@ -39,24 +72,54 @@ class MyWindow : GameWindow
             Logger.LogFatal($"Failed to load shaders: {ex.Message} {ex.InnerException?.Message}");
             this.Close();
         }
-        GL.ClearColor(0.2f, 0.2f, 0.2f, 1);
+        Shader!.Use();
+        this._screenSize = new(w, h);
+        this.CenterWindow(ScreenSize);
+    }
+    public void Init(int w, int h)
+    {
+        try
+        {
+            Shader = new Shader("Shaders/basic.vert", "Shaders/basic.frag");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogFatal($"Failed to load shaders: {ex.Message} {ex.InnerException?.Message}");
+            this.Close();
+        }
+        Shader!.Use();
+        this._screenSize = new(w, h);
+        this.CenterWindow(ScreenSize);
+        GL.Viewport(this.Location.X, this.Location.Y, w, h);
+    }
 
-        float[] vertices = {
-                -0.5f, -0.5f, 0.0f, //Bottom-left vertex
-                 0.5f, -0.5f, 0.0f, //Bottom-right vertex
-                 0.0f,  0.5f, 0.0f  //Top vertex
-                        };
+    protected override void OnLoad()
+    {
+        base.OnLoad();
 
-        var VAO = GL.GenVertexArray();
-        GL.BindVertexArray(VAO);
+        GL.ClearColor(0.2f, 0.2f, 0.2f, 0);
 
-        var VBO = GL.GenBuffer();
-        GL.BindBuffer(BufferTarget.ArrayBuffer, VBO);
 
+        _vao = GL.GenVertexArray();
+        GL.BindVertexArray(_vao);
+
+        _vbo = GL.GenBuffer();
+
+        GL.BindBuffer(BufferTarget.ArrayBuffer, _vbo);
         GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StaticDraw);
 
-        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
+
+        _ebo = GL.GenBuffer();
+        GL.BindBuffer(BufferTarget.ElementArrayBuffer, _ebo);
+        GL.BufferData(BufferTarget.ElementArrayBuffer, _indecies.Length * sizeof(uint), _indecies, BufferUsageHint.StaticDraw);
+
+
+        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
         GL.EnableVertexAttribArray(0);
+
+        GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+        GL.EnableVertexAttribArray(1);
+
     }
     protected override void OnUnload()
     {
@@ -67,21 +130,61 @@ class MyWindow : GameWindow
     protected override void OnUpdateFrame(FrameEventArgs args)
     {
         base.OnUpdateFrame(args);
-        UpdateSystems.Invoke(args.Time);
+        _sysMan.UpdateAll(args.Time);
         Logger.PrintQueue();
     }
 
     protected override void OnRenderFrame(FrameEventArgs args)
     {
         base.OnRenderFrame(args);
-        GL.Clear(ClearBufferMask.ColorBufferBit);
-        GL.ClearColor(0.2f, 0.2f, 0.2f, 1);
+        t = (float)_time.Time.TotalSeconds;
+        GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+        GL.ClearColor(0.2f, 0.2f, 0.2f, 0);
 
-        Shader!.Use();
+        foreach (var transform in _compMan.Components.OfType<TransformComponent>())
+        {
+
+            var r = (float)(MathF.Cos(t * 3) / 2 + 0.5);
+            var g = (float)(MathF.Cos(t * 3 + MathF.PI / 2) / 2 + 0.5);
+            var b = (float)(MathF.Cos(t * 3 - MathF.PI / 2) / 2 + 0.5);
+
+            // adjust pivot to center
+
+
+            var halfW = transform.Size.X / 2;
+            var halfH = transform.Size.Y / 2;
+
+            var x1 = transform.Position.X - halfW;
+            var x2 = transform.Position.X + halfW;
+            var y1 = transform.Position.Y - halfH;
+            var y2 = transform.Position.Y + halfH;
+
+
+            vertices = [
+                x2, y2, 0, r, g, b, // top right
+                x2, y1, 0, r, g, b, // bottom right
+                x1, y1, 0, r, g, b, // bottom left
+                x1, y2, 0, r, g, b, // top left
+            ];
+            // Ensure binding
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _vbo);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _ebo);
+
+            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StaticDraw);
+            GL.DrawElements(PrimitiveType.Triangles, _indecies.Length, DrawElementsType.UnsignedInt, 0);
+        }
+
+
         // 3. now draw the object
-        GL.DrawArrays(PrimitiveType.Triangles, 0, 3);
+        // GL.DrawArrays(PrimitiveType.Triangles, 0, 3);
 
         this.SwapBuffers();
+    }
+    protected override void OnResize(ResizeEventArgs e)
+    {
+        base.OnResize(e);
+        ScreenSize = e.Size;
+        GL.Viewport(this.Location.X, this.Location.Y, e.Width, e.Height);
     }
 }
 
@@ -91,6 +194,8 @@ public class Shader : IDisposable
 
     public int VertexShader;
     public int FragmentShader;
+
+    private int AspectUniformLocation;
 
     private bool disposedValue = false;
 
@@ -154,6 +259,9 @@ public class Shader : IDisposable
         GL.DetachShader(Handle, FragmentShader);
         GL.DeleteShader(FragmentShader);
         GL.DeleteShader(VertexShader);
+
+        // Get the locations of uniforms.
+        AspectUniformLocation = GL.GetUniformLocation(this.Handle, "aspect");
     }
 
     public void Use()
@@ -174,5 +282,10 @@ public class Shader : IDisposable
     {
         Dispose(true);
         GC.SuppressFinalize(this);
+    }
+
+    public void SetAspectUniform(float aspect)
+    {
+        GL.Uniform1(this.AspectUniformLocation, aspect);
     }
 }
