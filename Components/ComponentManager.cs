@@ -1,4 +1,7 @@
 using System.Reflection;
+using ECS.Entities;
+using ECS.Events;
+using ECS.Events.ComponentEvents;
 using ECS.Logs;
 using ECS.System;
 namespace ECS.Components;
@@ -9,6 +12,9 @@ namespace ECS.Components;
 [NeedDependencies]
 public class ComponentManager
 {
+    [SystemDependency] private readonly EventManager _evMan = default!;
+    [SystemDependency] private readonly EntityManager _entMan = default!;
+
     /// <summary>
     /// List of all created components.
     /// </summary>
@@ -32,11 +38,12 @@ public class ComponentManager
     {
         var newId = _components.Count;
 
-        var comp = Activator.CreateInstance(typeof(TComp), newId);
-        _components.Add((IComponent)comp!);
-        Logger.LogInfo($"Creating new component of type {comp!.GetType()} : {comp.GetHashCode()} with Component.id {newId}", true, ConsoleColor.DarkBlue);
+        var newComp = Activator.CreateInstance(typeof(TComp), newId);
+        _components.Add((IComponent)newComp!);
 
-        return (TComp)comp!;
+        var ev = new ComponentCreatedEvent((IComponent)newComp!);
+        _evMan.RaiseEvent(ev);
+        return (TComp)newComp!;
     }
 
     /// <summary>
@@ -54,8 +61,9 @@ public class ComponentManager
 
         var newComp = Activator.CreateInstance(compType, newId);
         _components.Add((IComponent)newComp!);
-        Logger.LogInfo($"Creating new component of type {newComp!.GetType()} : {newComp.GetHashCode()} with Component.id {newId}", true, ConsoleColor.DarkBlue);
 
+        var ev = new ComponentCreatedEvent((IComponent)newComp!);
+        _evMan.RaiseEvent(ev);
         return (IComponent)newComp!;
     }
 
@@ -104,6 +112,8 @@ public class ComponentManager
             field.SetValue(newComp, field.GetValue(comp));
         }
 
+        var ev = new ComponentClonedEvent(newComp, comp);
+        _evMan.RaiseEvent(ev);
         return newComp;
     }
 
@@ -129,6 +139,45 @@ public class ComponentManager
             prop.SetValue(newComp, prop.GetValue(comp));
         }
 
+        var ev = new ComponentClonedEvent(newComp, comp);
+        _evMan.RaiseEvent(ev);
         return newComp;
+    }
+
+    public bool HasComp<TComp>(int id)
+    where TComp : IComponent
+    {
+        var ent = _entMan.GetEntityById(id);
+        if (ent is null) return false;
+        if (ent.Components.Any(c => c.GetType() == typeof(TComp))) return true;
+        return false;
+    }
+    public bool HasComp<TComp>(IEntity ent)
+    where TComp : IComponent
+    {
+        if (ent is null) return false;
+        if (ent.Components.Any(c => c.GetType() == typeof(TComp))) return true;
+        return false;
+    }
+
+    public bool TryGetComp<TComp>(int id, out TComp? component)
+    where TComp : IComponent
+    {
+        component = default;
+        var ent = _entMan.GetEntityById(id);
+        if (ent is null) return false;
+
+        component = (TComp?)ent.Components.FirstOrDefault(c => c.GetType() == typeof(TComp));
+        return component is not null;
+    }
+
+    public bool TryGetComp<TComp>(IEntity ent, out TComp? component)
+    where TComp : IComponent
+    {
+        component = default;
+        if (ent is null) return false;
+
+        component = (TComp?)ent.Components.FirstOrDefault(c => c.GetType() == typeof(TComp));
+        return component is not null;
     }
 }

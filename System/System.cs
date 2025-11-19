@@ -13,8 +13,10 @@ public class EntitySystem : IComparable<EntitySystem>
 
     [SystemDependency]
     protected readonly EventManager _evMan = default!;
+    [SystemDependency] protected readonly ComponentManager _compMan = default!;
 
     [SystemDependency] private readonly EntityManager _entMan = default!;
+
     // public bool Initialized
     // {
     //     get => _entMan.InitializedSystems.First(obj => obj == this) is not null;
@@ -103,38 +105,24 @@ public class EntitySystem : IComparable<EntitySystem>
     public bool HasComp<TComp>(int id)
     where TComp : IComponent
     {
-        var ent = _entMan.GetEntityById(id);
-        if (ent is null) return false;
-        if (ent.Components.Any(c => c.GetType() == typeof(TComp))) return true;
-        return false;
+        return _compMan.HasComp<TComp>(id);
     }
     public bool HasComp<TComp>(IEntity ent)
     where TComp : IComponent
     {
-        if (ent is null) return false;
-        if (ent.Components.Any(c => c.GetType() == typeof(TComp))) return true;
-        return false;
+        return _compMan.HasComp<TComp>(ent);
     }
 
     public bool TryGetComp<TComp>(int id, out TComp? component)
     where TComp : IComponent
     {
-        component = default;
-        var ent = _entMan.GetEntityById(id);
-        if (ent is null) return false;
-
-        component = (TComp?)ent.Components.FirstOrDefault(c => c.GetType() == typeof(TComp));
-        return component is not null;
+        return _compMan.TryGetComp(id, out component);
     }
 
     public bool TryGetComp<TComp>(IEntity ent, out TComp? component)
     where TComp : IComponent
     {
-        component = default;
-        if (ent is null) return false;
-
-        component = (TComp?)ent.Components.FirstOrDefault(c => c.GetType() == typeof(TComp));
-        return component is not null;
+        return _compMan.TryGetComp(ent, out component);
     }
 
     /// <inheritdoc/>
@@ -167,5 +155,20 @@ public class EntitySystem : IComparable<EntitySystem>
 
         // Equal priority.
         return 0;
+    }
+}
+
+public class EntitySystemComparer : IComparer<EntitySystem>
+{
+    int IComparer<EntitySystem>.Compare(EntitySystem? x, EntitySystem? y)
+    {
+        // if both are null - they're equal.
+        if (x is null && y is null)
+            return 0;
+
+        if (x is null) return -1; // if only x instance is null - x is worse.
+        if (y is null) return 1; // if only y instance is null - x is better.
+
+        return x.CompareTo(y);
     }
 }

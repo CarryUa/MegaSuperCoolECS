@@ -32,20 +32,27 @@ public class PrototypeManager
             string json = File.ReadAllText(filePath);
             var j = JObject.Parse(json);
 
-            // Determine the type name from prototype
-            string typeName = j["Type"]!.ToString();
+            try
+            {
+                // Determine the type name from prototype
+                string typeName = j["Type"]!.ToString();
 
 
-            // Fill the prototype with data from JSON
-            var finalType = _prototypeTypes.FirstOrDefault(pt => pt.Name == typeName && !pt.IsAbstract);
-            var serializer = new JsonSerializer();
-            serializer.Converters.Add(new JSONComponentConverter(_compMan));
-            var proto = j.ToObject(finalType, serializer)! as IPrototype;
+                // Fill the prototype with data from JSON
+                var finalType = _prototypeTypes.FirstOrDefault(pt => pt.Name == typeName && !pt.IsAbstract);
+                var serializer = new JsonSerializer();
+                serializer.Converters.Add(new JSONComponentConverter(_compMan));
+                var proto = j.ToObject(finalType, serializer)! as IPrototype;
 
 
-            // Add the filled prototype back to the list
-            _prototypes.Add(proto!);
-            return proto!;
+                // Add the filled prototype back to the list
+                _prototypes.Add(proto!);
+                return proto!;
+            }
+            catch
+            {
+                throw new NullReferenceException("Required 'Type' property is unset");
+            }
         }
 
         // Fill the prototypes with placeholders

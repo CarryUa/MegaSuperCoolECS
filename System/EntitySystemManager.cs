@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
 using ECS.Events;
@@ -15,45 +14,25 @@ public enum InitPriority : byte
     Medium,
     High
 }
-public class EntitySystemComparer : IComparer<EntitySystem>
-{
-    int IComparer<EntitySystem>.Compare(EntitySystem? x, EntitySystem? y)
-    {
-        // if both are null - they're equal.
-        if (x is null && y is null)
-            return 0;
-
-        if (x is null) return -1; // if only x instance is null - x is worse.
-        if (y is null) return 1; // if only y instance is null - x is better.
-
-        return x.CompareTo(y);
-    }
-}
 
 /// <summary>
 /// Manages the initialization and updating of all EntitySystems. Also handles dependency injection and starts the loading of prototypes via <see cref="PrototypeManager.LoadPrototypes"/>.
 /// </summary>
 [NeedDependencies]
-public class EntitySystemManager
+public partial class EntitySystemManager
 {
     [SystemDependency] private readonly PrototypeManager _protoMan = default!;
     [SystemDependency] private readonly EventManager _evMan = default!;
 
     public List<EntitySystem> InitializedSystems { get => _injectableInstances.OfType<EntitySystem>().ToList(); }
-    public List<object> InjectableInstances { get => _injectableInstances.ToList(); }
 
-    /// <summary>
-    /// List for instaces that can be injected including systems.
-    /// AKA with <see cref="NeedDependencies"/> attribute
-    /// </summary>
-    private ConcurrentBag<object> _injectableInstances = [];
 
 
     public EntitySystemManager(MyWindow window)
     {
         // Add self to instances
-        _injectableInstances.Add(this);
-        _injectableInstances.Add(window);
+        this._injectableInstances.Add(this);
+        this._injectableInstances.Add(window);
     }
 
     /// <summary>
@@ -73,10 +52,8 @@ public class EntitySystemManager
     /// </summary>
     /// <param name="verbouse">Whether or not to log debug output.</param>
     /// <returns></returns>
-    public async Task InitAllSystems(bool verbouse = false)
+    public void InitAllSystems(bool verbouse = false)
     {
-
-        // Local function that initializes single object.
         void InitSystem(Type objT, bool verbouse = false)
         {
             // Create and store instance
@@ -84,39 +61,36 @@ public class EntitySystemManager
             var sys = Activator.CreateInstance(objT);
             _injectableInstances.Add(sys!);
 
-            // Log
             if (verbouse)
                 Logger.LogDebug($"Initializing system {sys!.GetType()} : {sys!.GetHashCode()}", true, ConsoleColor.DarkBlue);
         }
 
-        // Start stopwatch
+        // Shared stopwatch for prototypes and DI
         Stopwatch stopwatch = Stopwatch.StartNew();
 
         // Get all classes needing dependency injectiion (Including systems)
         var objectTypes = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.GetCustomAttribute<NeedDependencies>() is not null);
 
-        // Create Task List
         var tasks = new List<Task>();
 
-        // Fill the list with Init tasks
+
+        // Initialize Systems
         foreach (var objT in objectTypes)
         {
-            // Don't add it for initialization if it's not an EntitySystem
             tasks.Add(Task.Run(() => InitSystem(objT, verbouse)));
         }
 
-        // Wait for initialization
-        await Task.WhenAll(tasks);
+        Task.WhenAll(tasks).GetAwaiter().GetResult();
         tasks = []; // empty the list;
 
         // Fill the list with Inject tasks
         foreach (var obj in _injectableInstances)
         {
-            tasks.Add(InjectDependencies(obj, verbouse));
+            tasks.Add(this.InjectDependencies(obj, verbouse));
         }
 
         // Wait for injection
-        await Task.WhenAll(tasks);
+        Task.WhenAll(tasks).GetAwaiter().GetResult();
         stopwatch.Stop();
         Logger.LogInfo($"Initialized {InitializedSystems.Count} systems in {stopwatch.ElapsedMilliseconds}ms", true, ConsoleColor.Green);
 
@@ -142,87 +116,4 @@ public class EntitySystemManager
         _evMan.RaiseEvent(ev);
     }
 
-
-    /// <summary>
-    /// Injects all dependencies into the given object.
-    /// </summary>
-    /// <param name="obj">The object needing dependencies.</param>
-    /// <param name="v">Verbose logging flag.</param>
-    /// <returns>Task representing injection of all dependencies.</returns>
-    public async Task InjectDependencies(object obj, bool v = false)
-    {
-        // Local function to inject single dependency
-        void InjectDependency(FieldInfo field, object obj, bool v = false)
-        {
-            if (field.GetCustomAttribute<SystemDependency>() is not null)
-            {
-                foreach (var _class in _injectableInstances)
-                {
-                    if (_class.GetType() == field.FieldType)
-                    {
-                        // Search for existing instance
-                        var instance = _injectableInstances.First(obj => obj.GetType() == _class.GetType());
-
-
-                        // Create new if doesn't exist
-                        if (instance is null)
-                        {
-                            instance = Activator.CreateInstance(_class.GetType());
-                            if (v)
-                                Console.WriteLine($"Creating instance of {_class.GetType()} : {instance!.GetHashCode()}");
-                            _injectableInstances.Add(instance!);
-                        }
-                        field.SetValue(obj, instance);
-                        if (v)
-                            Logger.LogDebug($"Injecting dependency {instance!.GetType()} : {instance!.GetHashCode()} into {obj}.{field.Name}", true, ConsoleColor.DarkBlue);
-                        break;
-                    }
-                }
-            }
-        }
-
-
-        var tasks = new List<Task>();
-
-
-        var fields = obj!.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static);
-
-        foreach (var field in fields)
-        {
-            if (obj is null) continue;
-            tasks.Add(Task.Run(() => InjectDependency(field, obj, v)));
-        }
-        await Task.WhenAll(tasks);
-
-        return;
-    }
-
 }
-
-#region Attribute Def
-
-/// <summary>
-/// Marks field as dependency to be injected during initializing.        
-/// </summary>
-[AttributeUsage(AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
-public sealed class SystemDependency : Attribute
-{
-}
-
-/// <summary>
-/// Used for Systems and other classes that require dependency injection.
-/// </summary>
-[AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
-public sealed class NeedDependencies : Attribute
-{
-}
-
-/// <summary>
-/// Used for Systems and other classes that require initialization. Defines Priority of initialization. Classes without Priority will be initialized last.
-/// </summary>
-[AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-public sealed class InitializationPriority(InitPriority Priority) : Attribute
-{
-    public InitPriority Priority { get; } = Priority;
-}
-#endregion

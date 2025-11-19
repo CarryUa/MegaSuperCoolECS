@@ -28,7 +28,7 @@ public static class Logger
     /// <param name="msg">The message to be printed</param>
     /// <param name="fancy">If true, any numeric values and trailing strings will be printed in the specified color</param>
     /// <param name="color">The color to print numeric values and trailing strings. Defaults to DarkBlue.</param>
-    public static void LogInfo(object? msg, bool fancy = false, ConsoleColor color = ConsoleColor.DarkBlue)
+    public static void LogInfo(object? msg, bool fancy = true, ConsoleColor color = ConsoleColor.DarkBlue)
     {
         _logQueue.Enqueue(new(msg, fancy, color, LogType.Info));
     }
@@ -39,7 +39,7 @@ public static class Logger
     /// <param name="msg">The message to be printed</param>
     /// <param name="fancy">If true, any numeric values and trailing strings will be printed in the specified color</param>
     /// <param name="color">The color to print numeric values and trailing strings. Defaults to DarkBlue.</param>
-    public static void LogDebug(object? msg, bool fancy = false, ConsoleColor color = ConsoleColor.DarkBlue)
+    public static void LogDebug(object? msg, bool fancy = true, ConsoleColor color = ConsoleColor.DarkBlue)
     {
         _logQueue.Enqueue(new(msg, fancy, color, LogType.Debug));
     }
@@ -50,7 +50,7 @@ public static class Logger
     /// <param name="msg">The message to be printed</param>
     /// <param name="fancy">If true, any numeric values and trailing strings will be printed in the specified color</param>
     /// <param name="color">The color to print numeric values and trailing strings. Defaults to DarkBlue.</param>
-    public static void LogError(object? msg, bool fancy = false, ConsoleColor color = ConsoleColor.DarkBlue)
+    public static void LogError(object? msg, bool fancy = true, ConsoleColor color = ConsoleColor.DarkBlue)
     {
         _logQueue.Enqueue(new(msg, fancy, color, LogType.Error));
     }
@@ -64,7 +64,7 @@ public static class Logger
     /// <param name="msg">The message to be printed</param>
     /// <param name="fancy">If true, any numeric values and trailing strings will be printed in the specified color</param>
     /// <param name="color">The color to print numeric values and trailing strings. Defaults to DarkBlue.</param>
-    public static void LogFatal(object? msg, bool fancy = false, ConsoleColor color = ConsoleColor.DarkBlue)
+    public static void LogFatal(object? msg, bool fancy = true, ConsoleColor color = ConsoleColor.DarkBlue)
     {
         PrintQueue();
         Console.ForegroundColor = ConsoleColor.DarkMagenta;
@@ -86,7 +86,7 @@ public static class Logger
     /// <param name="msg">The exception to be printed</param>
     /// <param name="fancy">If true, any numeric values and trailing strings will be printed in the specified color</param>
     /// <param name="color">The color to print numeric values and trailing strings. Defaults to DarkBlue.</param>
-    public static void LogFatal(Exception ex, bool fancy = false, ConsoleColor color = ConsoleColor.DarkBlue)
+    public static void LogFatal(Exception ex, bool fancy = true, ConsoleColor color = ConsoleColor.DarkBlue)
     {
         PrintQueue();
         Console.ForegroundColor = ConsoleColor.DarkMagenta;
