@@ -1,12 +1,15 @@
 using ECS.Components;
+using ECS.Components.Sprite;
 using ECS.Components.Transform;
 using ECS.Logs;
 using ECS.System;
+using ECS.System.Sprite;
 using ECS.System.Time;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
+using SixLabors.ImageSharp;
 
 namespace MyOpenTKWindow;
 
@@ -16,6 +19,7 @@ public class MyWindow : GameWindow
     [SystemDependency] private readonly EntitySystemManager _sysMan = default!;
     [SystemDependency] private readonly ComponentManager _compMan = default!;
     [SystemDependency] private readonly TimeSystem _time = default!;
+    [SystemDependency] private readonly SpriteSystem _sprite = default!;
 
     public Vector2i ScreenSize
     {
@@ -41,10 +45,10 @@ public class MyWindow : GameWindow
             0,1,3,
             1,2,3};
     private float[] vertices = {
-            0.5f,  0.5f, 0.0f, 1f, 0, 0,  // top right
-            0.5f, -0.5f, 0.0f, 0, 1f, 0,  // bottom right
-           -0.5f, -0.5f, 0.0f, 0, 0, 1f, // bottom left
-           -0.5f,  0.5f, 0.0f, 1f, 1f, 0 // top left
+            0.5f,  0.5f, 0.0f, 1f, 1f,      // top right
+            0.5f, -0.5f, 0.0f, 1f, 0f,       // bottom right
+           -0.5f, -0.5f, 0.0f, 0f, 0f,       // bottom left
+           -0.5f,  0.5f, 0.0f, 0f, 1f,      // top left
                             };
 
     private int _vbo;
@@ -63,18 +67,7 @@ public class MyWindow : GameWindow
     /// <param name="h">Height of the screen</param>
     public MyWindow(int w, int h) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
     {
-        try
-        {
-            Shader = new Shader("Shaders/basic.vert", "Shaders/basic.frag");
-        }
-        catch (Exception ex)
-        {
-            Logger.LogFatal($"Failed to load shaders: {ex.Message} {ex.InnerException?.Message}");
-            this.Close();
-        }
-        Shader!.Use();
-        this._screenSize = new(w, h);
-        this.CenterWindow(ScreenSize);
+        Init(w, h);
     }
     public void Init(int w, int h)
     {
@@ -91,6 +84,8 @@ public class MyWindow : GameWindow
         this._screenSize = new(w, h);
         this.CenterWindow(ScreenSize);
         GL.Viewport(this.Location.X, this.Location.Y, w, h);
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.NearestMipmapNearest);
+        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
     }
 
     protected override void OnLoad()
@@ -113,11 +108,12 @@ public class MyWindow : GameWindow
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, _ebo);
         GL.BufferData(BufferTarget.ElementArrayBuffer, _indecies.Length * sizeof(uint), _indecies, BufferUsageHint.StaticDraw);
 
-
-        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+        // int posAttribLocation = GL.GetAttribLocation(Shader!.Handle, "aPosition");
+        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 5 * sizeof(float), 0);
         GL.EnableVertexAttribArray(0);
 
-        GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+        // int texCoordLocation = GL.GetAttribLocation(Shader!.Handle, "aTexCoord");
+        GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));
         GL.EnableVertexAttribArray(1);
 
     }
@@ -143,10 +139,19 @@ public class MyWindow : GameWindow
 
         foreach (var transform in _compMan.Components.OfType<TransformComponent>())
         {
+            if (_compMan.TryGetComp<SpriteComponent>(transform.OwnerID, out var sprite))
+            {
+                if (sprite is null || sprite.Image is null) continue;
+                // Logger.LogInfo($"Proccessing texture with id: {sprite.TextureID} and data size: {sprite.image.Data.Count()}bytes");
+                var texUniform = GL.GetUniformLocation(Shader!.Handle, "texture0");
 
-            var r = (float)(MathF.Cos(t * 3) / 2 + 0.5);
-            var g = (float)(MathF.Cos(t * 3 + MathF.PI / 2) / 2 + 0.5);
-            var b = (float)(MathF.Cos(t * 3 - MathF.PI / 2) / 2 + 0.5);
+                _sprite.UpdateSprite(sprite);
+
+                GL.ActiveTexture(TextureUnit.Texture0);
+                GL.BindTexture(TextureTarget.Texture2D, sprite.TextureID);
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+                GL.Uniform1(texUniform, 0);
+            }
 
             // adjust pivot to center
 
@@ -161,11 +166,12 @@ public class MyWindow : GameWindow
 
 
             vertices = [
-                x2, y2, 0, r, g, b, // top right
-                x2, y1, 0, r, g, b, // bottom right
-                x1, y1, 0, r, g, b, // bottom left
-                x1, y2, 0, r, g, b, // top left
+                x2, y2, 0, 1f, 1f, // top right
+                x2, y1, 0, 1f, 0f, // bottom right
+                x1, y1, 0, 0f, 0f, // bottom left
+                x1, y2, 0, 0f, 1f, // top left
             ];
+
             // Ensure binding
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vbo);
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, _ebo);
@@ -185,6 +191,11 @@ public class MyWindow : GameWindow
         base.OnResize(e);
         ScreenSize = e.Size;
         GL.Viewport(this.Location.X, this.Location.Y, e.Width, e.Height);
+    }
+
+    public int RequestTexture()
+    {
+        return GL.GenTexture();
     }
 }
 
