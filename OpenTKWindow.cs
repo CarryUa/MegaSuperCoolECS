@@ -83,9 +83,10 @@ public class MyWindow : GameWindow
         Shader!.Use();
         this._screenSize = new(w, h);
         this.CenterWindow(ScreenSize);
-        GL.Viewport(this.Location.X, this.Location.Y, w, h);
+        GL.Viewport(0, 0, w, h);
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.NearestMipmapNearest);
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+        WindowBorder = WindowBorder.Resizable;
     }
 
     protected override void OnLoad()
@@ -190,7 +191,7 @@ public class MyWindow : GameWindow
     {
         base.OnResize(e);
         ScreenSize = e.Size;
-        GL.Viewport(this.Location.X, this.Location.Y, e.Width, e.Height);
+        GL.Viewport(0, 0, e.Width, e.Height);
     }
 
     public int RequestTexture()

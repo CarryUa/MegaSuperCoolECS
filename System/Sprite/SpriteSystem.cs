@@ -5,14 +5,13 @@ using MyOpenTKWindow;
 using OpenTK.Graphics.OpenGL4;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
 
 namespace ECS.System.Sprite;
 
 [InitializationPriority(InitPriority.High)]
 public class SpriteSystem : EntitySystem
 {
-    private List<SpriteComponent> _loadedSprites = [];
+    private Dictionary<string, SpriteComponent> _loadedSprites = [];
 
     [SystemDependency] private readonly MyWindow _window = default!;
     [SystemDependency] private readonly TimeSystem _time = default!;
@@ -26,12 +25,33 @@ public class SpriteSystem : EntitySystem
     public void OnComponentCloned(SpriteComponent comp, ComponentClonedEvent ev)
     {
         if (ev.Component != comp) return;
+
+        ResolveSprite(comp);
+
+
+    }
+    public void ResolveSprite(SpriteComponent comp)
+    {
         try
         {
             // Load image file and read data
-            var stream = File.Open(comp.SpritePath, FileMode.Open, FileAccess.Read);
-            comp.Image = Image.Load(stream);
-            stream.Close();
+            if (_loadedSprites.ContainsKey(comp.SpritePath))
+            {
+                comp = _loadedSprites[comp.SpritePath];
+                LogInfo($"Loaded sprite from '{comp.SpritePath}': {comp.Image!.Size.Height * comp.Image.Size.Width}bytes over {comp.Image.Frames.Count} frames. Texture ID: {comp.TextureID} ", true, ConsoleColor.Green);
+
+                return;
+            }
+            else
+            {
+                var stream = File.Open(comp.SpritePath, FileMode.Open, FileAccess.Read);
+                comp.Image = Image.Load(stream);
+                stream.Close();
+
+                comp.TextureID = _window.RequestTexture();
+            }
+
+            if (comp is null) throw new NullReferenceException("SpriteComponent data was not loaded");
 
             // Invert image by X axis
             // comp.Image.Mutate(t => t.Flip(FlipMode.Vertical));
@@ -43,13 +63,14 @@ public class SpriteSystem : EntitySystem
             comp.PixelDataBuffer = data;
 
             // Handle OpenTK binding.
-            comp.TextureID = _window.RequestTexture();
             if (comp.TextureID == 0) throw new IndexOutOfRangeException($"GL context couldn't generate texture");
 
             GL.BindTexture(TextureTarget.Texture2D, comp.TextureID);
             GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, comp.Image.Width, comp.Image.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, comp.PixelDataBuffer);
             LogInfo($"Loaded sprite from '{comp.SpritePath}': {comp.Image.Size.Height * comp.Image.Size.Width}bytes over {comp.Image.Frames.Count} frames. Texture ID: {comp.TextureID} ", true);
-            _loadedSprites.Add(comp);
+
+            if (!_loadedSprites.ContainsKey(comp.SpritePath))
+                _loadedSprites.Add(comp.SpritePath, comp);
 
         }
         catch (Exception ex)
