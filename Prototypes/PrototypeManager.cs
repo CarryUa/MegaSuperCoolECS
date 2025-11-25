@@ -2,6 +2,7 @@ using System.Reflection;
 using ECS.Components;
 using ECS.Logs;
 using ECS.System;
+using ECS.System.Enums;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 namespace ECS.Prototypes;
@@ -10,6 +11,7 @@ namespace ECS.Prototypes;
 public class PrototypeManager
 {
     [SystemDependency] private readonly ComponentManager _compMan = default!;
+    [SystemDependency] private readonly EnumManager _enumMan = default!;
 
     private List<Type> _prototypeTypes = new List<Type>();
 
@@ -41,7 +43,9 @@ public class PrototypeManager
                 // Fill the prototype with data from JSON
                 var finalType = _prototypeTypes.FirstOrDefault(pt => pt.Name == typeName && !pt.IsAbstract);
                 var serializer = new JsonSerializer();
+                serializer.Converters.Add(new JSONEnumConverter(_enumMan));
                 serializer.Converters.Add(new JSONComponentConverter(_compMan));
+
                 var proto = j.ToObject(finalType, serializer)! as IPrototype;
 
 
@@ -108,6 +112,5 @@ public interface IPrototype
     /// The unique ID of this prototype.
     /// </summary>
     public string Id { get; }
-    // TODO: Implement this.
-    public string Type { get; }
+    // public string Type { get; }
 }
