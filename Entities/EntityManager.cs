@@ -22,10 +22,6 @@ public class EntityManager
     }
 
     private List<IEntity> _entities = new List<IEntity>();
-    /// <summary>
-    /// The next availible unique identifier.
-    /// </summary>
-    private int _nextId = 1;
 
     /// <summary>
     /// Creates a new entity from its EntityPrototype.
@@ -35,15 +31,17 @@ public class EntityManager
     public IEntity CreateEntity(string protoId)
     {
         var proto = _protoMan.GetPrototype<EntityPrototype>(protoId)!;
-        var entity = new Entity(_nextId++);
-
-        entity.Name = proto?.Name ?? "Unnamed Entity";
+        var entity = new Entity(_entities.Count)
+        {
+            Name = proto?.Name ?? "Unnamed Entity"
+        };
 
         foreach (var comp in proto?.Components ?? [])
         {
-            comp.OwnerID = entity.Id;
-            entity.AttachComponent(_compMan.CloneComponent(comp));
+            var clone = _compMan.CloneComponent(comp, entity.Id);
+            entity.AttachComponent(clone);
         }
+
 
         _entities.Add(entity);
         _eventMan.RaiseEvent(new EntityCreatedEvent(entity.Id));
@@ -57,6 +55,7 @@ public class EntityManager
     public void RemoveEntity(IEntity entity)
     {
         _entities.Remove(entity);
+        entity.Components.Clear();
     }
 
     /// <summary>

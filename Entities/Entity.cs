@@ -1,4 +1,5 @@
 using ECS.Components;
+using ECS.Logs;
 
 namespace ECS.Entities;
 
@@ -47,19 +48,21 @@ public class Entity : IEntity
     {
         if (!_components.Contains(comp))
         {
+            Logger.LogDebug($"Attaching component {comp} to {this}", true, ConsoleColor.DarkGreen);
+
             _components.Add(comp);
+            comp.OwnerID = this._id;
         }
     }
     public void DetachComponent(IComponent comp)
     {
-        if (_components.Contains(comp))
-        {
-            _components.Remove(comp);
-        }
+        Logger.LogDebug($"Detaching component {comp} from {this}", true, ConsoleColor.DarkGreen);
+        _components.Remove(comp);
+        comp.OwnerID = -1;
     }
 
     public override string ToString()
     {
-        return $"Entity {Id} with {Components.Count} components";
+        return $"Entity({Id}) with {Components.Count} components";
     }
 };

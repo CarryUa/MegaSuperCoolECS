@@ -38,12 +38,13 @@ public class ComponentManager
     {
         var newId = _components.Count;
 
-        var newComp = Activator.CreateInstance(typeof(TComp), newId);
-        _components.Add((IComponent)newComp!);
+        var newComp = (TComp)Activator.CreateInstance(typeof(TComp))!;
+        newComp.Id = newId;
+        _components.Add((IComponent)newComp);
 
-        var ev = new ComponentCreatedEvent((IComponent)newComp!);
+        var ev = new ComponentCreatedEvent((IComponent)newComp);
         _evMan.RaiseEvent(ev);
-        return (TComp)newComp!;
+        return (TComp)newComp;
     }
 
     /// <summary>
@@ -59,12 +60,13 @@ public class ComponentManager
 
         var newId = _components.Count;
 
-        var newComp = Activator.CreateInstance(compType, newId);
-        _components.Add((IComponent)newComp!);
+        var newComp = (IComponent)Activator.CreateInstance(compType)!;
+        newComp!.Id = newId;
+        _components.Add((IComponent)newComp);
 
-        var ev = new ComponentCreatedEvent((IComponent)newComp!);
+        var ev = new ComponentCreatedEvent((IComponent)newComp);
         _evMan.RaiseEvent(ev);
-        return (IComponent)newComp!;
+        return (IComponent)newComp;
     }
 
     /// <summary>
@@ -101,47 +103,38 @@ public class ComponentManager
     /// </summary>
     /// <typeparam name="TComp">The type of the component to clone.</typeparam>
     /// <param name="comp">The component to be cloned.</param>
+    /// <param name="OwnerId">The owner of the new component. Default is -1 (no owner).</param>
     /// <returns>The cloned component.</returns>
-    public TComp CloneComponent<TComp>(TComp comp)
+    public TComp CloneComponent<TComp>(TComp comp, int OwnerId = -1)
     where TComp : IComponent
     {
-        var newComp = CreateComponent<TComp>();
-        // Go over all the fields of new copy, and set it's values to other's
-        foreach (var field in newComp.GetType().GetFields())
-        {
-            field.SetValue(newComp, field.GetValue(comp));
-        }
+        var copy = CreateComponent(comp.GetType());
 
-        var ev = new ComponentClonedEvent(newComp, comp);
+
+        DeepCloneComponent(comp, ref copy);
+        copy.OwnerID = OwnerId;
+
+        var ev = new ComponentClonedEvent(copy, comp);
         _evMan.RaiseEvent(ev);
-        return newComp;
+        return (TComp)copy;
     }
 
     /// <summary>
     /// Clones the component data into the new instance.
     /// </summary>
     /// <param name="comp">The component to be cloned.</param>
+    /// <param name="OwnerId">The owner of the new component. Default is -1 (no owner).</param>
     /// <returns>The cloned component.</returns>
-    public IComponent CloneComponent(IComponent comp)
+    public IComponent CloneComponent(IComponent comp, int OwnerId = -1)
     {
-        var newType = _componentTypes.FirstOrDefault(t => t.Name == comp.GetType().Name);
-        var newComp = CreateComponent(newType!);
-        // Go over all the fields of new copy, and set it's values to other's
-        foreach (var field in newComp.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
-        {
-            field.SetValue(newComp, field.GetValue(comp));
-        }
+        var copy = CreateComponent(comp.GetType());
 
-        // Go over all the properties of new copy, and set it's values to other's
-        foreach (var prop in newComp.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
-        {
-            if (!prop.CanWrite) continue;
-            prop.SetValue(newComp, prop.GetValue(comp));
-        }
+        DeepCloneComponent(comp, ref copy);
+        copy.OwnerID = OwnerId;
 
-        var ev = new ComponentClonedEvent(newComp, comp);
+        var ev = new ComponentClonedEvent(copy, comp);
         _evMan.RaiseEvent(ev);
-        return newComp;
+        return copy;
     }
 
     public bool HasComp<TComp>(int id)
@@ -179,5 +172,106 @@ public class ComponentManager
 
         component = (TComp?)ent.Components.FirstOrDefault(c => c.GetType() == typeof(TComp));
         return component is not null;
+    }
+
+    private void DeepCloneComponent(IComponent original, ref IComponent copy)
+    {
+        var fields = original.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+        if (original == copy) return;
+
+        Logger.LogInfo($"DeepCloning component {original} to {copy}");
+
+        foreach (var f in fields)
+        {
+            var value = f.GetValue(original);
+
+            if (value is null)
+            {
+                Logger.LogInfo($"\t\t>>>Copying null field {f.Name}");
+                f.SetValue(copy, value); // Set directly
+
+                continue;
+            }
+
+            if (f.FieldType.IsValueType)
+            {
+                Logger.LogInfo($"\t\t>>>Copying value field {f.Name} with value {value}");
+                f.SetValue(copy, value); // Set directly
+
+                continue;
+            }
+
+            if (f.FieldType == typeof(string))
+            {
+                Logger.LogInfo($"\t\t>>>Copying string field {f.Name} with value {value}");
+                f.SetValue(copy, string.Join("", value));
+            }
+
+            if (f.FieldType.IsByRef)
+            {
+                Logger.LogInfo($"\t\t>>>Copying ref field {f.Name} with value {value}");
+
+                try
+                {
+                    var byrefcopy = Activator.CreateInstance(value.GetType()); // Try to set to new instance
+                    f.SetValue(copy, byrefcopy);
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError($"\t\t>>>Couldn't clone ref type {f.Name}({value}): {e.Message}");
+                }
+
+                continue;
+            }
+        }
+
+        var props = original.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic);
+
+        foreach (var p in props)
+        {
+            var value = p.GetValue(original);
+
+            if (value is null)
+            {
+                Logger.LogInfo($"\t\t>>>Copying null field {p.Name}");
+                p.SetValue(copy, value); // Set directly
+
+                continue;
+            }
+
+            if (p.PropertyType.IsValueType)
+            {
+                Logger.LogInfo($"\t\t>>>Copying value field {p.Name} with value {value}");
+                p.SetValue(copy, value); // Set directly
+
+                continue;
+            }
+
+            if (p.PropertyType == typeof(string))
+            {
+                Logger.LogInfo($"\t\t>>>Copying string field {p.Name} with value {value}");
+                p.SetValue(copy, string.Join("", value));
+            }
+
+            if (p.PropertyType.IsByRef)
+            {
+                Logger.LogInfo($"\t\t>>>Copying ref field {p.Name} with value {value}");
+
+                try
+                {
+                    var byrefcopy = Activator.CreateInstance(value.GetType()); // Try to set to new instance
+                    p.SetValue(copy, byrefcopy);
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError($"\t\t>>>Couldn't clone ref type {p.Name}({value}): {e.Message}");
+                }
+
+                continue;
+            }
+
+
+        }
     }
 }

@@ -38,6 +38,15 @@ public class EntitySystem : IComparable<EntitySystem>
 
     }
 
+
+    /// <summary>
+    /// Called once when all dependencies of this were injected. AKA right after initialization.
+    /// </summary>
+    /// <remarks>This is called before the <see cref="EntitySystem.Init"/></remarks>
+    public virtual void PreInit()
+    {
+    }
+
     /// <summary>
     /// Called once when all dependencies of this were injected. AKA right after initialization.
     /// </summary>

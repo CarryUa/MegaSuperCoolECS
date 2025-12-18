@@ -1,6 +1,6 @@
 namespace ECS.Components.MoveOnInput;
 
-public class MoveOnInputComponent(int id) : Component(id)
+public class MoveOnInputComponent() : Component
 {
     public float MoveSpeed;
 }

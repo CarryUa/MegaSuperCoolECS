@@ -113,6 +113,10 @@ public partial class EntitySystemManager
         // Call the init method
         foreach (var sys in initList.ToList())
         {
+            sys.PreInit();
+        }
+        foreach (var sys in initList.ToList())
+        {
             sys.Init();
         }
 

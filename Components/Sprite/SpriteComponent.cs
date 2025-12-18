@@ -1,9 +1,10 @@
 
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace ECS.Components.Sprite;
 
-public class SpriteComponent(int newId) : Component(newId)
+public class SpriteComponent() : Component
 {
     public string SpritePath = "";
 
@@ -11,9 +12,9 @@ public class SpriteComponent(int newId) : Component(newId)
 
     public TimeSpan? NextUpdateTime = null;
 
-    public float AnimationFPS = 1;
+    public ImageFrame<Rgba32>? CurrentFrame = null;
 
-    public byte[] PixelDataBuffer = [];
+    public float AnimationFPS = 1;
 
     public int CurrentFrameIndex = 0;
 

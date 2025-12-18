@@ -8,7 +8,7 @@ public interface IComponent
     /// <summary>
     /// The unique identifier of this component.
     /// </summary>
-    int Id { get; }
+    int Id { get; set; }
 
     /// <summary>
     /// The ID of the entity that owns this component.
@@ -23,14 +23,16 @@ public interface IComponent
 /// All components should inherit from this class.
 /// </remarks>
 /// <param name="newId"></param>
-public class Component(int newId) : IComponent
+public class Component() : IComponent
 {
-    public int Id
-    {
-        get => _id;
-    }
+    public int Id { get; set; } = -1;
 
     public int OwnerID { get; set; }
 
-    protected int _id { get; } = newId;
+
+    public override string ToString()
+    {
+        return $"{GetType().Name}({Id})";
+    }
+
 };
