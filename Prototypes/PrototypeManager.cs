@@ -34,29 +34,24 @@ public class PrototypeManager
             string json = File.ReadAllText(filePath);
             var j = JObject.Parse(json);
 
-            try
-            {
-                // Determine the type name from prototype
-                string typeName = j["Type"]!.ToString();
+            // Determine the type name from prototype
+            if (!j.TryGetValue("Type", out var typeToken))
+                throw new JsonSerializationException("Prototype is missing required 'Type' property.");
 
 
-                // Fill the prototype with data from JSON
-                var finalType = _prototypeTypes.FirstOrDefault(pt => pt.Name == typeName && !pt.IsAbstract);
-                var serializer = new JsonSerializer();
-                serializer.Converters.Add(new JSONEnumConverter(_enumMan));
-                serializer.Converters.Add(new JSONComponentConverter(_compMan));
+            // Fill the prototype with data from JSON
+            var finalType = _prototypeTypes.FirstOrDefault(pt => pt.Name == typeToken.ToString() && !pt.IsAbstract);
+            var serializer = new JsonSerializer();
+            serializer.Converters.Add(new JSONEnumConverter(_enumMan));
+            serializer.Converters.Add(new JSONComponentConverter(_compMan));
 
-                var proto = j.ToObject(finalType, serializer)! as IPrototype;
+            var proto = j.ToObject(finalType, serializer)! as IPrototype;
 
 
-                // Add the filled prototype back to the list
-                _prototypes.Add(proto!);
-                return proto!;
-            }
-            catch
-            {
-                throw new NullReferenceException("Required 'Type' property is unset");
-            }
+            // Add the filled prototype back to the list
+            _prototypes.Add(proto!);
+            return proto!;
+
         }
 
         // Fill the prototypes with placeholders
@@ -66,6 +61,7 @@ public class PrototypeManager
 
         // The path to the prototypes folder
         string protoPath = Directory.GetCurrentDirectory() + "/Prototypes";
+        int root_length = Directory.GetCurrentDirectory().Length;
         var protoFiles = Directory.EnumerateFiles(protoPath, "*.json", SearchOption.AllDirectories);
 
         foreach (var file in protoFiles)
@@ -78,7 +74,7 @@ public class PrototypeManager
             }
             catch (Exception e)
             {
-                Logger.LogError($"Failed to load prototype from file {file}: {e.Message}");
+                Logger.LogError($"Failed to load prototype from file {file[root_length..]}: {e.Message}");
             }
         }
 
