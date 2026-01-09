@@ -4,6 +4,7 @@ using ECS.Events;
 using ECS.Events.SystemEvents;
 using ECS.Logs;
 using ECS.Prototypes;
+using ECS.Resources;
 using ECS.System.Enums;
 using MyOpenTKWindow;
 
@@ -25,6 +26,7 @@ public partial class EntitySystemManager
     [SystemDependency] private readonly PrototypeManager _protoMan = default!;
     [SystemDependency] private readonly EventManager _evMan = default!;
     [SystemDependency] private readonly EnumManager _enumMan = default!;
+    [SystemDependency] private readonly ResourceManager _resMan = default!;
 
     public List<EntitySystem> InitializedSystems { get => _injectableInstances.OfType<EntitySystem>().ToList(); }
 
@@ -35,6 +37,12 @@ public partial class EntitySystemManager
         // Add self to instances
         this._injectableInstances.Add(this);
         this._injectableInstances.Add(window);
+    }
+
+    public EntitySystemManager()
+    {
+        // Add self to instances
+        this._injectableInstances.Add(this);
     }
 
     /// <summary>
@@ -98,8 +106,12 @@ public partial class EntitySystemManager
 
         stopwatch.Restart();
 
+        // Load resources
+        _resMan.LoadAllPrototypes();
+
         // Initialize enums
         _enumMan.InitializeEnums();
+
 
         // Load prototypes
         _protoMan.LoadPrototypes(verbouse);

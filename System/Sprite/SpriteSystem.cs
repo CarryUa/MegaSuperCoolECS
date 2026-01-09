@@ -1,10 +1,10 @@
 using ECS.Components.Sprite;
 using ECS.Events.ComponentEvents;
+using ECS.Prototypes.Resources;
+using ECS.Resources;
 using ECS.System.Time;
 using MyOpenTKWindow;
 using OpenTK.Graphics.OpenGL4;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 
 namespace ECS.System.Sprite;
 
@@ -15,6 +15,8 @@ public class SpriteSystem : EntitySystem
 
     [SystemDependency] private readonly MyWindow _window = default!;
     [SystemDependency] private readonly TimeSystem _time = default!;
+    [SystemDependency] private readonly ResourceManager _resMan = default!;
+
 
     public override void PreInit()
     {
@@ -34,88 +36,71 @@ public class SpriteSystem : EntitySystem
     {
         try
         {
-            // Load image file and read data
-            if (_loadedSprites.ContainsKey(comp.SpritePath))
+            if (!_resMan.TryGetResource<ImageResourcePrototype>(comp.SpritePath, out var res))
             {
-                var cached = _loadedSprites[comp.SpritePath];
-                comp.Image = cached.Image;
-                comp.CurrentFrame = cached.CurrentFrame;
-                LogInfo($"Loaded sprite from '{comp.SpritePath}': {comp.Image!.Size.Height * comp.Image.Size.Width}bytes over {comp.Image.Frames.Count} frames. Texture ID: {comp.TextureID} ", true, ConsoleColor.Green);
-
-                return;
-            }
-            else
-            {
-                var stream = File.Open(comp.SpritePath, FileMode.Open, FileAccess.Read);
-                comp.Image = Image.Load(stream);
-                stream.Close();
-
-                comp.TextureID = _window.RequestTexture();
+                throw new NullReferenceException($"Resource at '{comp.SpritePath}' was not found or loaded");
             }
 
-            if (comp is null) throw new NullReferenceException("SpriteComponent data was not loaded");
+            comp.Image = res!;
 
-            // Invert image by X axis
-            comp.CurrentFrame = (ImageFrame<Rgba32>)comp.Image.Frames[0];
+            LogInfo($"Image data:\n\n size: {comp.Image.Width}x{comp.Image.Height}px\ndata length: {comp.Image.PixelData.Length}");
+            comp.Image!.TextureID = _window.RequestTexture();
 
 
+            if (comp is null || comp.Image.PixelData is null) throw new NullReferenceException("SpriteComponent data was not loaded");
 
 
             // Handle OpenTK binding.
-            if (comp.TextureID == 0) throw new IndexOutOfRangeException($"GL context couldn't generate texture");
+            if (comp.Image.TextureID == 0) throw new IndexOutOfRangeException($"GL context couldn't generate texture");
 
-            byte[] data = new byte[comp.CurrentFrame.Width * comp.CurrentFrame.Height * 4];
-
-            comp.CurrentFrame.CopyPixelDataTo(data);
-
-            GL.BindTexture(TextureTarget.Texture2D, comp.TextureID);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, comp.Image.Width, comp.Image.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, data);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+            GL.BindTexture(TextureTarget.Texture2D, comp.Image.TextureID);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, comp.Image.Width, comp.Image.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, comp.Image.PixelData);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
-            data = [];
 
-            LogInfo($"Loaded sprite from '{comp.SpritePath}': {comp.Image.Size.Height * comp.Image.Size.Width}bytes over {comp.Image.Frames.Count} frames. Texture ID: {comp.TextureID} ", true);
+            LogInfo($"Loaded sprite from '{comp.SpritePath}': {comp.Image.Height * comp.Image.Width}bytes. Texture ID: {comp.Image.TextureID} ", true);
 
             _loadedSprites.TryAdd(comp.SpritePath, comp);
         }
         catch (Exception ex)
         {
             LogError($"Couldn't load sprite from '{comp.SpritePath}'. {ex.Message}");
+            throw;
         }
     }
 
-    public void UpdateSprite(SpriteComponent comp)
-    {
-        // LogInfo($"Trying to start updateSprite");
-        if (comp.Image is null)
-        {
-            LogError($"Tried to load empty texture with id {comp.TextureID} on entity {comp.OwnerID} with component {comp.Id}");
-            return;
-        }
-        if (comp.Image.Frames.Count <= 1) return;
+    // public void UpdateSprite(SpriteComponent comp)
+    // {
+    //     // LogInfo($"Trying to start updateSprite");
+    //     if (comp.Image is null)
+    //     {
+    //         LogError($"Tried to load empty texture with id {comp.TextureID} on entity {comp.OwnerID} with component {comp.Id}");
+    //         return;
+    //     }
+    //     if (comp.Image.Frames.Count <= 1) return;
 
 
-        comp.NextUpdateTime ??= TimeSpan.FromSeconds(1f / comp.AnimationFPS);
+    //     comp.NextUpdateTime ??= TimeSpan.FromSeconds(1f / comp.AnimationFPS);
 
-        if (_time.Time >= comp.NextUpdateTime)
-        {
-            // LogInfo($"Trying to update image");
-            comp.NextUpdateTime += TimeSpan.FromSeconds(1f / comp.AnimationFPS);
-            comp.CurrentFrameIndex++;
-            if (comp.CurrentFrameIndex >= comp.Image.Frames.Count)
-                comp.CurrentFrameIndex = 0;
+    //     if (_time.Time >= comp.NextUpdateTime)
+    //     {
+    //         // LogInfo($"Trying to update image");
+    //         comp.NextUpdateTime += TimeSpan.FromSeconds(1f / comp.AnimationFPS);
+    //         comp.CurrentFrameIndex++;
+    //         if (comp.CurrentFrameIndex >= comp.Image.Frames.Count)
+    //             comp.CurrentFrameIndex = 0;
 
-            comp.CurrentFrame = (ImageFrame<Rgba32>)comp.Image.Frames[comp.CurrentFrameIndex];
+    //         comp.CurrentFrame = (ImageFrame<Rgba32>)comp.Image.Frames[comp.CurrentFrameIndex];
 
-            byte[] data = new byte[comp.CurrentFrame!.Height * comp.CurrentFrame.Width * 4 * sizeof(byte)];
-            comp.CurrentFrame.CopyPixelDataTo(data);
+    //         byte[] data = new byte[comp.CurrentFrame!.Height * comp.CurrentFrame.Width * 4 * sizeof(byte)];
+    //         comp.CurrentFrame.CopyPixelDataTo(data);
 
-            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-            GL.BindTexture(TextureTarget.Texture2D, comp.TextureID);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, comp.Image.Width, comp.Image.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, data);
-            data = [];
-        }
-    }
+    //         GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+    //         GL.BindTexture(TextureTarget.Texture2D, comp.TextureID);
+    //         GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, comp.Image.Width, comp.Image.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, data);
+    //         data = [];
+    //     }
+    // }
 }

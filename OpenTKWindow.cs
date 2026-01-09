@@ -9,7 +9,6 @@ using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
-using SixLabors.ImageSharp;
 
 namespace MyOpenTKWindow;
 
@@ -142,19 +141,19 @@ public class MyWindow : GameWindow
         {
             if (_compMan.TryGetComp<SpriteComponent>(transform.OwnerID, out var sprite))
             {
-                if (sprite is null || sprite.Image is null || sprite.CurrentFrame is null)
+                if (sprite is null || sprite.Image is null)
                 {
                     Logger.LogError($"Tried to render a null component/image/frame at {sprite}");
-                    continue;
+                    throw new();
                 }
 
                 // Logger.LogInfo($"Proccessing texture with id: {sprite.TextureID} and data size: {sprite.image.Data.Count()}bytes");
                 var texUniform = GL.GetUniformLocation(Shader!.Handle, "texture0");
 
-                _sprite.UpdateSprite(sprite);
+                // _sprite.UpdateSprite(sprite);
 
                 GL.ActiveTexture(TextureUnit.Texture0);
-                GL.BindTexture(TextureTarget.Texture2D, sprite.TextureID);
+                GL.BindTexture(TextureTarget.Texture2D, sprite.Image.TextureID);
                 GL.Uniform1(texUniform, 0);
             }
 

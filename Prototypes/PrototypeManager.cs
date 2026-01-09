@@ -97,6 +97,15 @@ public class PrototypeManager
         }
         return (TProto)proto;
     }
+
+    /// <summary>
+    /// Adds the prototype to the register.
+    /// </summary>
+    /// <param name="prototype"></param>
+    public void RegisterPrototype(IPrototype prototype)
+    {
+        this._prototypes.Add(prototype);
+    }
 }
 
 /// <summary>

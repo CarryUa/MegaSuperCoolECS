@@ -1,4 +1,5 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project
+   Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
@@ -8,24 +9,42 @@
     <RootNamespace>ECS</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="OpenTK" Version="4.9.4" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+    <PackageReference
+       Include="Newtonsoft.Json"
+       Version="13.0.4"/>
+    <PackageReference
+       Include="OpenTK"
+       Version="4.9.4"/>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\**\*">
+    <None
+       Include="**/*.dll"
+       Exclude="bin\**; obj\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Prototypes\**\*.json">
+    <None
+       Include="Shaders\**\*"
+       Exclude="bin\**; obj\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="**\*.png">
+    <None
+       Include="Prototypes\**\*.json"
+       Exclude="bin\**; obj\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="**\*.jpg">
+    <None
+       Include="**\*.png"
+       Exclude="bin\**; obj\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="**\*.gif">
+    <None
+       Include="**\*.jpg"
+       Exclude="bin\**; obj\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None
+       Include="**\*.gif"
+       Exclude="bin\**; obj\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
