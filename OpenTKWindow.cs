@@ -1,8 +1,12 @@
 using ECS.Components;
 using ECS.Components.Sprite;
 using ECS.Components.Transform;
+using ECS.Events;
+using ECS.Events.ShaderEvents;
+using ECS.Events.WindowEvents;
 using ECS.Logs;
 using ECS.System;
+using ECS.System.Shader;
 using ECS.System.Sprite;
 using ECS.System.Time;
 using OpenTK.Graphics.OpenGL4;
@@ -19,6 +23,8 @@ public class MyWindow : GameWindow
     [SystemDependency] private readonly ComponentManager _compMan = default!;
     [SystemDependency] private readonly TimeSystem _time = default!;
     [SystemDependency] private readonly SpriteSystem _sprite = default!;
+    [SystemDependency] private readonly ShaderSystem _shader = default!;
+    [SystemDependency] private readonly EventManager _eventMan = default!;
 
     public Vector2i ScreenSize
     {
@@ -27,7 +33,6 @@ public class MyWindow : GameWindow
         {
             _screenSize = value;
             _aspect = (float)value.X / (float)value.Y;
-            Shader?.SetAspectUniform(_aspect);
             GL.Viewport(0, 0, value.X, value.Y);
         }
     }
@@ -38,9 +43,7 @@ public class MyWindow : GameWindow
 
     private float t = 0;
 
-    private Shader? Shader { get; set; }
-
-    private int[] _indecies = {
+    private uint[] _indecies = {
             0,1,3,
             1,2,3};
     private float[] vertices = {
@@ -70,16 +73,6 @@ public class MyWindow : GameWindow
     }
     public void Init(int w, int h)
     {
-        try
-        {
-            Shader = new Shader("Shaders/basic.vert", "Shaders/basic.frag");
-        }
-        catch (Exception ex)
-        {
-            Logger.LogFatal($"Failed to load shaders: {ex.Message} {ex.InnerException?.Message}");
-            this.Close();
-        }
-        Shader!.Use();
         this._screenSize = new(w, h);
         this.CenterWindow(ScreenSize);
         GL.Viewport(0, 0, w, h);
@@ -120,7 +113,7 @@ public class MyWindow : GameWindow
     protected override void OnUnload()
     {
         base.OnUnload();
-        Shader!.Dispose();
+        _shader.DisposeAllPrograms();
     }
 
     protected override void OnUpdateFrame(FrameEventArgs args)
@@ -141,20 +134,29 @@ public class MyWindow : GameWindow
         {
             if (_compMan.TryGetComp<SpriteComponent>(transform.OwnerID, out var sprite))
             {
-                if (sprite is null || sprite.Image is null)
+                if (sprite is null || sprite.Image is null || sprite.ShaderProgram is null)
                 {
-                    Logger.LogError($"Tried to render a null component/image/frame at {sprite}");
+                    Logger.LogError($"Tried to render a null component/image/frame/shaderprog at {sprite}");
                     throw new();
                 }
 
                 // Logger.LogInfo($"Proccessing texture with id: {sprite.TextureID} and data size: {sprite.image.Data.Count()}bytes");
-                var texUniform = GL.GetUniformLocation(Shader!.Handle, "texture0");
 
                 // _sprite.UpdateSprite(sprite);
+                // Logger.LogDebug($"{sprite.ShaderProgram!.Handle}, aspect: {_aspect}");
+                GL.UseProgram(sprite.ShaderProgram!.Handle);
 
                 GL.ActiveTexture(TextureUnit.Texture0);
                 GL.BindTexture(TextureTarget.Texture2D, sprite.Image.TextureID);
-                GL.Uniform1(texUniform, 0);
+
+                var ev = new ShaderProgramPreRenderEvent()
+                {
+                    ShaderProgramPrototype = sprite.ShaderProgram
+                };
+                _eventMan.RaiseEvent(ev);
+
+
+
             }
 
             // adjust pivot to center
@@ -169,19 +171,24 @@ public class MyWindow : GameWindow
             var y2 = transform.Position.Y + halfH;
 
 
+
             vertices = [
                 x2, y2, 0, 1f, 1f, // top right
                 x2, y1, 0, 1f, 0f, // bottom right
                 x1, y1, 0, 0f, 0f, // bottom left
                 x1, y2, 0, 0f, 1f, // top left
             ];
-
             // Ensure binding
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _vbo);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _ebo);
 
+            GL.BindVertexArray(_vao);
+            GL.EnableVertexAttribArray(0);
+            GL.EnableVertexAttribArray(1);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _vbo);
             GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StaticDraw);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _ebo);
             GL.DrawElements(PrimitiveType.Triangles, _indecies.Length, DrawElementsType.UnsignedInt, 0);
+
+
         }
 
 
@@ -193,114 +200,22 @@ public class MyWindow : GameWindow
     protected override void OnResize(ResizeEventArgs e)
     {
         base.OnResize(e);
+        var ev = new WindowResizeEvent()
+        {
+            OldSize = ScreenSize,
+            OldAspect = Apsect,
+            NewSize = e.Size,
+
+        };
         ScreenSize = e.Size;
         GL.Viewport(0, 0, e.Width, e.Height);
+
+
+        _eventMan?.RaiseEvent(ev);
     }
 
     public int RequestTexture()
     {
         return GL.GenTexture();
-    }
-}
-
-public class Shader : IDisposable
-{
-    public int Handle;
-
-    public int VertexShader;
-    public int FragmentShader;
-
-    private int AspectUniformLocation;
-
-    private bool disposedValue = false;
-
-    ~Shader()
-    {
-        if (!disposedValue)
-        {
-            Logger.LogError("Shader is not disposed after finalization!");
-        }
-    }
-
-    public Shader(string vertPath, string fragPath)
-    {
-        // Get source code
-        string vertSource = File.ReadAllText(vertPath);
-        string fragSource = File.ReadAllText(fragPath);
-
-        // Generate shaders
-        VertexShader = GL.CreateShader(ShaderType.VertexShader);
-        GL.ShaderSource(VertexShader, vertSource);
-
-        FragmentShader = GL.CreateShader(ShaderType.FragmentShader);
-        GL.ShaderSource(FragmentShader, fragSource);
-
-        // Compile shaders
-        GL.CompileShader(VertexShader);
-
-        GL.GetShader(VertexShader, ShaderParameter.CompileStatus, out int success);
-        if (success == 0)
-        {
-            string infoLog = GL.GetShaderInfoLog(VertexShader);
-            Console.WriteLine(infoLog);
-        }
-
-        GL.CompileShader(FragmentShader);
-
-        GL.GetShader(FragmentShader, ShaderParameter.CompileStatus, out success);
-        if (success == 0)
-        {
-            string infoLog = GL.GetShaderInfoLog(FragmentShader);
-            Console.WriteLine(infoLog);
-        }
-
-        // Create GPU program and attach shaders
-        Handle = GL.CreateProgram();
-
-        GL.AttachShader(Handle, VertexShader);
-        GL.AttachShader(Handle, FragmentShader);
-
-        GL.LinkProgram(Handle);
-
-        GL.GetProgram(Handle, GetProgramParameterName.LinkStatus, out success);
-        if (success == 0)
-        {
-            string infoLog = GL.GetProgramInfoLog(Handle);
-            Console.WriteLine(infoLog);
-        }
-
-        // Detach and delete shaders once program is linked
-        GL.DetachShader(Handle, VertexShader);
-        GL.DetachShader(Handle, FragmentShader);
-        GL.DeleteShader(FragmentShader);
-        GL.DeleteShader(VertexShader);
-
-        // Get the locations of uniforms.
-        AspectUniformLocation = GL.GetUniformLocation(this.Handle, "aspect");
-    }
-
-    public void Use()
-    {
-        GL.UseProgram(Handle);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!disposedValue)
-        {
-            GL.DeleteProgram(Handle);
-            disposedValue = true;
-        }
-    }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    public void SetAspectUniform(float aspect)
-    {
-        GL.Uniform1(this.AspectUniformLocation, aspect);
     }
 }

@@ -1,4 +1,5 @@
 using ECS.Components;
+using ECS.Logs;
 using ECS.System;
 namespace ECS.Events;
 
@@ -8,7 +9,7 @@ public interface IEvent
 }
 
 /// <summary>
-/// 
+/// Class representation of Component-Event subsctibtion;
 /// </summary>
 /// <param name="tcomp"></param>
 /// <param name="tev"></param>
@@ -37,8 +38,11 @@ public sealed class EventManager
     // <IComponent, Type>, action = <comp, TEv>, action
     private Queue<EventSubscription> ActiveSubscriptions = new();
 
+    // System events don't need anything but action;
+    private Queue<KeyValuePair<Type, Action<IEvent>>> ActiveSystemSubsctibtions = new();
+
     /// <summary>
-    /// Subsctibes all components of given type to given event type.
+    /// Subscribes all components of given type to given event type.
     /// </summary>
     /// <typeparam name="TComp"></typeparam>
     /// <typeparam name="TEv"></typeparam>
@@ -68,6 +72,24 @@ public sealed class EventManager
     }
 
     /// <summary>
+    /// Subsctibes given action to given event type regardless of any components.
+    /// </summary>
+    /// <typeparam name="TComp"></typeparam>
+    /// <typeparam name="TEv"></typeparam>
+    /// <param name="action">The callback function that will be invoked when the event is raised.</param>
+    /// <exception cref="InvalidCastException"></exception>
+    public void SubscribeEvent<TEv>(Action<TEv> action)
+    where TEv : IEvent
+    {
+        var act = new Action<IEvent>((ev) =>
+            {
+                action((TEv)ev);
+            });
+
+        ActiveSystemSubsctibtions.Enqueue(new(typeof(TEv), act));
+    }
+
+    /// <summary>
     /// Raises the given event by invoking all callbacks.
     /// </summary>
     /// <param name="ev"></param>
@@ -83,6 +105,11 @@ public sealed class EventManager
                     subscription.Action(comp, ev);
                 }
             }
+        }
+        foreach (var (TEv, action) in ActiveSystemSubsctibtions.ToList())
+        {
+            if (ev.GetType().Equals(TEv))
+                action(ev);
         }
     }
 }

@@ -13,7 +13,7 @@ class Program
             window.Init(1000, 1000);
             // Instantiate EntitySystemManager
             var sysMan = new EntitySystemManager(window);
-            sysMan.InitAllSystems(true);
+            sysMan.InitAllSystems();
 
 
             // Force print messages from initializing

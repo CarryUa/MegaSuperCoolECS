@@ -6,6 +6,7 @@ using ECS.Logs;
 using ECS.Prototypes;
 using ECS.Resources;
 using ECS.System.Enums;
+using ECS.System.Shader;
 using MyOpenTKWindow;
 
 namespace ECS.System;
@@ -27,6 +28,7 @@ public partial class EntitySystemManager
     [SystemDependency] private readonly EventManager _evMan = default!;
     [SystemDependency] private readonly EnumManager _enumMan = default!;
     [SystemDependency] private readonly ResourceManager _resMan = default!;
+    [SystemDependency] private readonly ShaderSystem _shaderMan = default!;
 
     public List<EntitySystem> InitializedSystems { get => _injectableInstances.OfType<EntitySystem>().ToList(); }
 
@@ -117,6 +119,10 @@ public partial class EntitySystemManager
         _protoMan.LoadPrototypes(verbouse);
         stopwatch.Stop();
         Logger.LogInfo($"Loaded {_protoMan.Prototypes.Count} prototypes in {stopwatch.ElapsedMilliseconds}ms", true, ConsoleColor.Green);
+
+        _shaderMan.CompileAllShaders();
+        _shaderMan.CreateAllPrograms();
+        _shaderMan.DeleteAllShaders();
 
         // Sort systems by priority attribute
         List<EntitySystem> initList = InitializedSystems;

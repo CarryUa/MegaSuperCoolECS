@@ -1,0 +1,6 @@
+{
+    "Type": "ShaderProgramPrototype",
+    "Id": "BaseShaderProgram",
+    "VertexShader": "BaseVertexShader",
+    "FragmentShader": "LGBTQAFragmentShader"
+}

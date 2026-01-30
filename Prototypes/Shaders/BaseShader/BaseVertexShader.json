@@ -1,0 +1,15 @@
+{
+    "Type": "ShaderPrototype",
+    "Id": "BaseVertexShader",
+    "ShaderPath": "./Shaders/basic.vert",
+    "ShaderType": "enum.ShaderType.VertexShader",
+    "Uniforms" :
+    {
+       "aspect": "enum.UniformType.Float"
+    },
+    "Attributes":
+    {
+        "aPosition": "enum.AttributeType.FloatVec3",
+        "aTexCoord": "enum.AttributeType.FloatVec2"
+    }
+}

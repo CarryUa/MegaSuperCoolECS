@@ -1,0 +1,16 @@
+{
+    "Type": "ShaderPrototype",
+    "Id": "LGBTQAFragmentShader",
+    "ShaderPath": "./Shaders/lgbtqa.frag",
+    "ShaderType": "enum.ShaderType.FragmentShader",
+    "Uniforms" :
+    {
+       "texture0": "enum.UniformType.Sampler2D",
+       "lgbtqa_speed": "enum.UniformType.Float",
+       "time": "enum.UniformType.Float"
+    },
+    "Attributes":
+    {
+        "texCoord": "enum.AttributeType.FloatVec2"
+    }
+}

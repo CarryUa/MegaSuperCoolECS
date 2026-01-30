@@ -1,10 +1,15 @@
 using ECS.Prototypes.Resources;
+using ECS.Prototypes.Shaders;
 
 namespace ECS.Components.Sprite;
 
 public class SpriteComponent() : Component
 {
     public string SpritePath = "";
+
+    public string ShaderProgramProtoID = "";
+
+    public ShaderProgramPrototype? ShaderProgram;
 
     public IImageResource? Image = null;
 

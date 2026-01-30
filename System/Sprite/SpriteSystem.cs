@@ -1,6 +1,8 @@
 using ECS.Components.Sprite;
 using ECS.Events.ComponentEvents;
+using ECS.Prototypes;
 using ECS.Prototypes.Resources;
+using ECS.Prototypes.Shaders;
 using ECS.Resources;
 using ECS.System.Time;
 using MyOpenTKWindow;
@@ -16,6 +18,7 @@ public class SpriteSystem : EntitySystem
     [SystemDependency] private readonly MyWindow _window = default!;
     [SystemDependency] private readonly TimeSystem _time = default!;
     [SystemDependency] private readonly ResourceManager _resMan = default!;
+    [SystemDependency] private readonly PrototypeManager _protoMan = default!;
 
 
     public override void PreInit()
@@ -36,6 +39,8 @@ public class SpriteSystem : EntitySystem
     {
         try
         {
+            comp.ShaderProgram = _protoMan.GetPrototype<ShaderProgramPrototype>(comp.ShaderProgramProtoID);
+
             if (!_resMan.TryGetResource<ImageResourcePrototype>(comp.SpritePath, out var res))
             {
                 throw new NullReferenceException($"Resource at '{comp.SpritePath}' was not found or loaded");

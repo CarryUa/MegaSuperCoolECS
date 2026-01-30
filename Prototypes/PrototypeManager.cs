@@ -99,6 +99,16 @@ public class PrototypeManager
     }
 
     /// <summary>
+    /// Returns all availible prototypes of specified type.
+    /// </summary>
+    /// <typeparam name="TProto"></typeparam>
+    /// <returns></returns>
+    public IEnumerable<TProto> GetPrototypes<TProto>()
+    {
+        return Prototypes.Where(p => p.GetType().IsAssignableFrom(typeof(TProto))).OfType<TProto>();
+    }
+
+    /// <summary>
     /// Adds the prototype to the register.
     /// </summary>
     /// <param name="prototype"></param>

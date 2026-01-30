@@ -69,6 +69,19 @@ public class EntitySystem : IComparable<EntitySystem>
     }
 
     /// <summary>
+    /// Subsctibes given action to given event type regardless of any components.
+    /// </summary>
+    /// <typeparam name="TComp"></typeparam>
+    /// <typeparam name="TEv"></typeparam>
+    /// <param name="action">The callback function that will be invoked when the event is raised.</param>
+    /// <exception cref="InvalidCastException"></exception>
+    protected void SubscribeEvent<TEv>(Action<TEv> action)
+    where TEv : IEvent
+    {
+        _evMan.SubscribeEvent(action);
+    }
+
+    /// <summary>
     /// Raises the given event by invoking all callbacks.
     /// </summary>
     /// <typeparam name="TEv"></typeparam>

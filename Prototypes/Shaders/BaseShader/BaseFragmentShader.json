@@ -1,0 +1,14 @@
+{
+    "Type": "ShaderPrototype",
+    "Id": "BaseFragmentShader",
+    "ShaderPath": "./Shaders/basic.frag",
+    "ShaderType": "enum.ShaderType.FragmentShader",
+    "Uniforms" :
+    {
+       "texture0": "enum.UniformType.Sampler2D"
+    },
+    "Attributes":
+    {
+        "texCoord": "enum.AttributeType.FloatVec2"
+    }
+}
